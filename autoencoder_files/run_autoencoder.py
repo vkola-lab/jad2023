@@ -6,7 +6,8 @@ import torch.optim as optim
 from convolutional_backbones import ConvLayer, vanilla_CNN_backbone
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
-from sklearn.model_selection import train_test_split m
+import os
+from sklearn.model_selection import train_test_split
 import torch.nn as nn
 from tqdm import tqdm
 import torch.nn.functional as F
