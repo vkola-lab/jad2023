@@ -11,10 +11,10 @@ import torch
 import torch.nn as nn
 from csv_read import yield_csv_data
 from handle_input import get_args
-from select_task import select_task
 from net_ie import ImageEncoder
 from net_id import ImageDecoder
 from net_ve import VoiceEncoder
+from read_txt import select_task, get_pt_file
 
 def gen_mri_latent_vectors(csv_in, image_encoder):
 	"""
@@ -48,12 +48,14 @@ def main():
 	args = {k: v for k, v in args.items() if v is not None}
 	task_csv_txt = args.get('task_csv_txt', 'task_csvs.txt')
 	task_id = args.get('task_id', 0)
+	img_pt_txt = args.get('img_pt_txt', 'img_pt.txt')
+	img_pt_idx = args.get('img_pt_idx', 0)
 	csv_info, ext = select_task(task_id, task_csv_txt)
-
+	img_pt = get_pt_file(img_pt_idx, img_pt_txt)
 	image_encoder = ImageEncoder()
 	image_decoder = ImageDecoder()
 	image_autoencoder = nn.Sequential(image_encoder, image_decoder)
-	image_autoencoder.load_state_dict(torch.load('./save/exp_1/net_ie.pt'))
+	image_autoencoder.load_state_dict(torch.load(img_pt))
 
 	loaded_image_encoder = image_autoencoder[0]
 	mni_brain_to_vector = gen_mri_latent_vectors(csv_info, loaded_image_encoder)

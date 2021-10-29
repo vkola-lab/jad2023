@@ -1,7 +1,8 @@
 """
-select_task.py
-select task based on task_id input;
+read_txt.py
+read txt files;
 """
+
 def select_task(task_id, task_csv_txt):
 	"""
 	based on task_id, and return csv_info, ext;
@@ -15,5 +16,15 @@ def select_task(task_id, task_csv_txt):
 			if idx == task_id:
 				csv_info, ext = line.split(',')
 				ext = ext.strip()
-				break
-	return csv_info, ext
+				return csv_info, ext
+	return None, None
+
+def get_pt_file(pt_idx, pt_txt):
+	"""
+	read pt txt file and return the appropriate pretrained(pt) model file based on pt_idx;
+	"""
+	with open(pt_txt, 'r') as infile:
+		for idx, line in enumerate(infile):
+			if idx == pt_idx:
+				return line
+	return None
