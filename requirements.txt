@@ -1,0 +1,16 @@
+astroid==2.8.4
+dataclasses==0.8
+isort==5.9.3
+lazy-object-proxy==1.6.0
+mccabe==0.6.1
+nibabel==3.2.1
+numpy==1.19.5
+packaging==21.2
+platformdirs==2.4.0
+pylint==2.11.1
+pyparsing==2.4.7
+toml==0.10.2
+torch==1.10.0
+typed-ast==1.4.3
+typing-extensions==3.10.0.2
+wrapt==1.13.2
