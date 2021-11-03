@@ -5,12 +5,15 @@ Created on Wed Oct 27 11:09:36 2021
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+import os
 import sys
 import nibabel as nib
 import torch
 import torch.nn as nn
+from audio_dataset import AudioDataset
 from csv_read import yield_csv_data
 from handle_input import get_args
+from misc import gen_seed_dirs, get_time
 from net_ie import ImageEncoder
 from net_id import ImageDecoder
 from net_ve import VoiceEncoder
@@ -40,16 +43,22 @@ def gen_mri_latent_vectors(csv_in, image_encoder):
 		mni_brain_to_vector[mni_brain] = image_encoder(torch_array)
 	return mni_brain_to_vector
 
-# generate feature/latent vectors using image encoder
-# don't forget to DETACH the outputs using Tensor.detach()
-
-# new voice encoder
-# net_ve = VoiceEncoder()
-
-# train voice encoder
-
-# save
-# torch.save({k: v.cpu() for k, v in net_ve.state_dict().items()}, './save/exp_1/net_ve.pt')
+def get_target_vectors(img_pt_idx, img_pt_txt, csv_info):
+	"""
+	get mri target vectors
+	"""
+	img_pt = get_pt_file(img_pt_idx, img_pt_txt)
+	image_encoder = ImageEncoder()
+	image_decoder = ImageDecoder()
+	image_autoencoder = nn.Sequential(image_encoder, image_decoder)
+	img_dict = torch.load(img_pt)['state_dict']
+	image_autoencoder.load_state_dict(img_dict)
+	loaded_image_encoder = image_autoencoder[0]
+	mni_fp_to_vector = gen_mri_latent_vectors(csv_info, loaded_image_encoder)
+	# for mni_fp, mni_vector in mni_fp_to_vector.items():
+	# 	print(mni_fp)
+	# 	print(mni_vector.shape)
+	return mni_fp_to_vector
 
 def main():
 	"""
@@ -61,18 +70,32 @@ def main():
 	task_id = args.get('task_id', 0)
 	img_pt_txt = args.get('img_pt_txt', 'img_pt.txt')
 	img_pt_idx = args.get('img_pt_idx', 0)
+	device = int(args.get('device', 0))
+	n_epoch = int(args.get('n_epoch', 1))
+	num_seeds = int(args.get('num_seeds', 1))
+	num_folds = int(args.get('num_folds', 5))
 	csv_info, ext = select_task(task_id, task_csv_txt)
-	img_pt = get_pt_file(img_pt_idx, img_pt_txt)
-	image_encoder = ImageEncoder()
-	image_decoder = ImageDecoder()
-	image_autoencoder = nn.Sequential(image_encoder, image_decoder)
-	img_dict = torch.load(img_pt)['state_dict']
-	image_autoencoder.load_state_dict(img_dict)
-	loaded_image_encoder = image_autoencoder[0]
-	mni_brain_to_vector = gen_mri_latent_vectors(csv_info, loaded_image_encoder)
-	for mni_brain, mni_vector in mni_brain_to_vector.items():
-		print(mni_brain)
-		print(mni_vector.shape)
+	mni_fp_to_vector = get_target_vectors(img_pt_idx, img_pt_txt, csv_info)
+
+	seed_to_dir = gen_seed_dirs(num_seeds, ext, n_epoch)
+
+	for seed, dir_rsl in seed_to_dir.items():
+		time_ext = get_time()
+		dir_rsl = f'{dir_rsl}/{time_ext}'
+		assert not os.path.isdir(dir_rsl), dir_rsl
+		os.makedirs(dir_rsl)
+		print(dir_rsl)
+		for vld_idx in range(num_folds):
+			for tst_idx in range(num_folds):
+				if vld_idx == tst_idx:
+					continue
+					## vld and tst fold can't be the same?
+				dset_kw = {'num_folds': num_folds, 'vld_idx': vld_idx, 'tst_idx': tst_idx,
+					'seed': seed}
+				dset_trn = AudioDataset(csv_info, 'TRN', **dset_kw)
+				dset_vld = AudioDataset(csv_info, 'VLD', **dset_kw)
+				dset_tst = AudioDataset(csv_info, 'TST', **dset_kw)
+				print()
 
 if __name__ == '__main__':
 	main()

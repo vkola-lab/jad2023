@@ -17,4 +17,8 @@ def get_args(args):
 		help='path to the img autoencoder pt txt file')
 	parser.add_argument('-img_pt', '--img_pt_idx',
 		help='input to select a img autoencoder pretrained (pt) file;')
+	parser.add_argument("-d", "--device", help='gpu device index;')
+	parser.add_argument('-ne', '--n_epoch', help='indicates number of epochs;')
+	parser.add_argument('-ns', '--num_seeds', help='indicates number of seeds to use;')
+	parser.add_argument("-nf", "--num_folds", help='number of cross validation folds;')
 	return parser.parse_args(args).__dict__

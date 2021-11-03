@@ -6,9 +6,13 @@ mccabe==0.6.1
 nibabel==3.2.1
 numpy==1.19.5
 packaging==21.2
+pandas==1.1.5
 platformdirs==2.4.0
 pylint==2.11.1
 pyparsing==2.4.7
+python-dateutil==2.8.2
+pytz==2021.3
+six==1.16.0
 toml==0.10.2
 torch==1.10.0
 typed-ast==1.4.3
