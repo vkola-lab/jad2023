@@ -43,3 +43,9 @@ def get_fold(sample_ids, folds, vld_idx, tst_idx, mode):
 		## keep all fold indices except for the TRN and VLD indices;
 		idx = np.concatenate([folds[all_fold_indices[i]] for i in range(len(all_fold_indices))])
 	return sample_ids[idx]
+
+def yield_aud_and_mni(row):
+	"""
+	yield audio fn and mni vector;
+	"""
+	yield (row['seg_fp'], row['mni_brain'])

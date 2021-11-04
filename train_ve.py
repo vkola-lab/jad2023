@@ -91,11 +91,10 @@ def main():
 					continue
 					## vld and tst fold can't be the same?
 				dset_kw = {'num_folds': num_folds, 'vld_idx': vld_idx, 'tst_idx': tst_idx,
-					'seed': seed}
+					'seed': seed, 'mni_fp_to_vector': mni_fp_to_vector}
 				dset_trn = AudioDataset(csv_info, 'TRN', **dset_kw)
 				dset_vld = AudioDataset(csv_info, 'VLD', **dset_kw)
 				dset_tst = AudioDataset(csv_info, 'TST', **dset_kw)
-				print()
 
 if __name__ == '__main__':
 	main()
