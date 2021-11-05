@@ -3,3 +3,5 @@
 .DS_Store
 *__
 *.pylintrc
+*pt_files/
+*results/

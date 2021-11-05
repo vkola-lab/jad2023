@@ -7,7 +7,6 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from audio_dataset import collate_fn
-from calc_metrics import calc_performance_metrics, show_performance_metrics
 from net_ve import VoiceEncoder
 
 class Model:
@@ -63,51 +62,40 @@ class Model:
 		opt = kwargs.get('opt')
 		loss_fn = kwargs.get('loss_fn')
 		dir_rsl = kwargs.get('dir_rsl')
-		vld_mcc = -1
 		if not debug_stop:
 			for epoch in range(n_epoch):
 				## set model to training mode
 				self.nn.train()
-				cum_loss, cum_corr, count = 0, 0, 0
+				cum_loss, count = 0, 0
 				## training loop
-				with tqdm(total=len(dset_trn), desc=f'Epoch {epoch:.3f} (TRN)',
+				with tqdm(total=len(dset_trn), desc=f'Epoch {epoch} (TRN)',
 					ascii=True, bar_format='{l_bar}{r_bar}', file=sys.stdout) as pbar:
 					for Xs, ys, _ in dldr_trn:
-						# self.nn.reformat(Xs, self.n_concat)
-						ys = torch.tensor(ys, dtype=torch.long, device=self.nn.device)
+						self.nn.reformat(Xs, self.n_concat)
+						ys = torch.tensor(ys, dtype=torch.float32, device=self.nn.device)
 						self.nn.zero_grad()
 						scores, loss = self.nn.get_scores_loss(Xs, ys, loss_fn)
 						loss.backward()
 						opt.step()
-						pred = torch.argmax(scores, 1)
+						# pred = torch.argmax(scores, 1)
 						## accumulated loss
 						cum_loss += loss.data.cpu().numpy() * len(ys)
 						## accumulated no. of correct predictions
-						cum_corr += (pred == ys).sum().data.cpu().numpy()
+						# cum_corr += (pred == ys).sum().data.cpu().numpy()
 						## accumulated no. of processed samples
 						count += len(ys)
 						## update statistics and progress bar
 						pbar.set_postfix({
 							'loss': f'{(cum_loss / count):.6f}',
-							'acc' : f'{(cum_corr / count):.6f}',
+							#'acc' : f'{(cum_corr / count):.6f}',
 						})
 						pbar.update(len(ys))
 				## forward validation dataset
 				scr = self.prob(dset_vld)
-				## calculate audio-level performance metrics
-				met = calc_performance_metrics(scr, dset_vld.targets)
-				print('Audio-level validation performance:')
-				show_performance_metrics(met)
-				print()
 				## save model
-				if np.isnan(met['mcc']):
-					continue
-				if vld_mcc <= met['mcc']:
-					vld_mcc = met['mcc']
-					self.save_model(f'{dir_rsl}/tmp.pt')
+				self.save_model(f'{dir_rsl}/tmp.pt')
 			# load best model
-			if dset_vld is not None and vld_mcc != -1:
-				self.load_model(f'{dir_rsl}/tmp.pt')
+			self.load_model(f'{dir_rsl}/tmp.pt')
 
 	def prob(self, dset, b_size=32, eval_collate_fn=collate_fn):
 		"""

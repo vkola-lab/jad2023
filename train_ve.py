@@ -93,6 +93,11 @@ def main():
 		assert not os.path.isdir(dir_rsl), dir_rsl
 		os.makedirs(dir_rsl)
 		print(dir_rsl)
+		trn_dir = f'{dir_rsl}/trn'
+		vld_dir = f'{dir_rsl}/vld'
+		for dir_to_make in [trn_dir, vld_dir]:
+			if not os.path.isdir(dir_to_make):
+				os.makedirs(dir_to_make)
 		for vld_idx in range(num_folds):
 			for tst_idx in range(num_folds):
 				if vld_idx == tst_idx:
@@ -109,17 +114,18 @@ def main():
 				model_fit_kw = {'n_epoch': n_epoch, 'b_size': 4, 'learning_rate': learning_rate,
 					'weights': weights, 'debug_stop': debug_stop}
 				model_obj.fit(dset_trn, dset_vld, dir_rsl, **model_fit_kw)
+				vld_tst = f'vld_{vld_idx}_tst_{tst_idx}'
 				if not no_save_model:
-					if not os.path.isdir(f"pt_files/{ext}"):
-						os.makedirs(f"pt_files/{ext}")
-					model_obj.save_model(f"./pt_files/{ext}/"+\
-						f"{ext}_{vld_idx}_{seed}_{n_epoch}_{time_ext}_epochs.pt")
+					pt_file_dir = f"{dir_rsl}/pt_files/"
+					if not os.path.isdir(pt_file_dir):
+						os.makedirs(pt_file_dir)
+					model_obj.save_model(os.path.join(pt_file_dir, f'{vld_tst}.pt'))
 				rsl = model_obj.prob(dset_tst, b_size=64)
 				df_dat = dset_tst.df_dat
 				df_dat['score'] = rsl
-				df_dat.head(2)
-				input()
-
+				df_dat.to_csv(f'{dir_rsl}/tst_audio_{seed}_{vld_tst}.csv', index=False)
+				dset_trn.df_dat.to_csv(f'{trn_dir}/trn_audio_{seed}_{vld_tst}.csv', index=False)
+				dset_vld.df_dat.to_csv(f'{vld_dir}/vld_audio_{seed}_{vld_tst}.csv', index=False)
 
 if __name__ == '__main__':
 	main()
