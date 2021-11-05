@@ -91,13 +91,13 @@ class Model:
 						})
 						pbar.update(len(ys))
 				## forward validation dataset
-				scr = self.prob(dset_vld)
+				scr = self.eval(dset_vld)
 				## save model
 				self.save_model(f'{dir_rsl}/tmp.pt')
 			# load best model
 			self.load_model(f'{dir_rsl}/tmp.pt')
 
-	def prob(self, dset, b_size=32, eval_collate_fn=collate_fn):
+	def prob(self, dset, b_size=16, eval_collate_fn=collate_fn):
 		"""
 		calc model output
 		"""
@@ -108,7 +108,7 @@ class Model:
 		"""
 		evaluate model;
 		"""
-		b_size = kwargs.get('b_size', 32)
+		b_size = kwargs.get('b_size', 16)
 		debug_stop = kwargs.get('debug_stop', False)
 		eval_collate_fn = kwargs.get('eval_collate_fn', collate_fn)
 		if debug_stop:
@@ -120,22 +120,23 @@ class Model:
 				  'collate_fn': eval_collate_fn}
 		dldr = torch.utils.data.DataLoader(dset, **dl_dr_kwargs)
 		# list to store result (i.e. all outputs)
-		rsl = []
+		x_fp_to_rsl = {}
 		# evaluation loop
-		rest_of_info_list = []
 		with torch.set_grad_enabled(False):
 			with tqdm(total=len(dset), desc='Epoch ___ (EVL)', ascii=True,
 				bar_format='{l_bar}{r_bar}', file=sys.stdout) as pbar:
-				for Xs, *rest_of_info in dldr:
-					rest_of_info_list.append(rest_of_info)
+				for Xs, _, x_filepaths in dldr:
 					self.nn.reformat(Xs, self.n_concat)
 					out = self.nn.get_scores(Xs)
 					# append batch outputs to result
-					rsl.append(out.data.cpu().numpy())
+					results = out.data.cpu().numpy()
+					for idx, x_fp in enumerate(x_filepaths):
+						assert x_fp not in x_fp_to_rsl, x_fp
+						x_fp_to_rsl[x_fp] = results[idx]
 					# progress bar
 					pbar.update(len(Xs))
 		# concatenate all batch outputs
-		return np.concatenate(rsl)
+		return x_fp_to_rsl
 
 	def save_model(self, filepath):
 		"""

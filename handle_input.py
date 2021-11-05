@@ -31,4 +31,6 @@ def get_args(args):
 		help='loss weight for positive label;')
 	parser.add_argument('-nsm', '--no_save_model', action='store_true',
 		help='if set, models will not be saved;')
+	parser.add_argument('-nwft', '--no_write_fold_txt', action='store_true',
+		help='if set, fold txt files are not written;')
 	return parser.parse_args(args).__dict__

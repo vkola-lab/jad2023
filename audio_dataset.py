@@ -51,6 +51,8 @@ class AudioDataset(Dataset):
 
 		self.df_dat = pd.DataFrame(data_list, columns=data_headers)
 		self.targets = self.get_targets()
+		self.patient_list = list(set(current_fold_ids))
+		self.patient_list.sort()
 
 	def __len__(self):
 		"""
@@ -62,10 +64,11 @@ class AudioDataset(Dataset):
 		"""
 		get item;
 		"""
-		fea = np.load(self.df_dat.loc[idx, 'audio_fn'])
+		audio_fp = self.df_dat.loc[idx, 'audio_fn']
+		fea = np.load(audio_fp)
 		mni_brain = self.df_dat.loc[idx, 'mni_brain']
 		target = self.mni_fp_to_vector[mni_brain]
-		return fea, target, self.df_dat.loc[idx, 'patient_id']
+		return fea, target, self.df_dat.loc[idx, 'patient_id'], audio_fp
 
 	def get_targets(self):
 		"""
@@ -79,6 +82,6 @@ def collate_fn(batch):
 	collect audio path, label, patient ID
 	"""
 	aud = [itm[0] for itm in batch]
-	target = np.stack([itm[1] for itm in batch])
-	pid = np.stack([itm[2] for itm in batch])
-	return aud, target, pid
+	target = np.concatenate([itm[1] for itm in batch], axis=0)
+	audio_filepaths = np.stack([itm[3] for itm in batch])
+	return aud, target, audio_filepaths

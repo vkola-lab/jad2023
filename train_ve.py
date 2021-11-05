@@ -8,6 +8,7 @@ Created on Wed Oct 27 11:09:36 2021
 import os
 import sys
 import nibabel as nib
+import numpy as np
 import torch
 import torch.nn as nn
 from audio_dataset import AudioDataset
@@ -81,7 +82,13 @@ def main():
 	weights = [negative_loss_weight, positive_loss_weight]
 	debug_stop = args.get('debug_stop')
 	no_save_model = args.get('no_save_model')
+	no_write_fold_txt = args.get('no_write_fold_txt')
 
+	final_args = {'task_id': task_id, 'img_pt_idx': img_pt_idx,
+		'device': device, 'n_epoch': n_epoch,
+		'num_seeds': num_seeds, 'num_folds': num_folds,
+		'learning_rate': learning_rate, 'weights': weights,
+		'no_save_model': no_save_model}
 	csv_info, ext = select_task(task_id, task_csv_txt)
 	mni_fp_to_vector = get_target_vectors(img_pt_idx, img_pt_txt, csv_info)
 
@@ -120,12 +127,32 @@ def main():
 					if not os.path.isdir(pt_file_dir):
 						os.makedirs(pt_file_dir)
 					model_obj.save_model(os.path.join(pt_file_dir, f'{vld_tst}.pt'))
-				rsl = model_obj.prob(dset_tst, b_size=64)
+				x_fp_to_rsl = model_obj.eval(dset_tst, b_size=16)
 				df_dat = dset_tst.df_dat
-				df_dat['score'] = rsl
+				voice_mri_vector_parent = f'{dir_rsl}/voice_mri_vectors/{vld_tst}'
+				if not os.path.isdir(voice_mri_vector_parent):
+					os.makedirs(voice_mri_vector_parent)
+				for df_idx, row in df_dat.iterrows():
+					audio_fn = row['audio_fn']
+					voice_mri_vector = x_fp_to_rsl[audio_fn]
+					base_audio = os.path.basename(audio_fn)
+					voice_mri_vector_fp = os.path.join(voice_mri_vector_parent,
+						f'voice_mri_{base_audio}')
+					np.save(voice_mri_vector_fp, voice_mri_vector)
+					df_dat.loc[df_idx, 'voice_mri_vector_fp'] = voice_mri_vector_fp
 				df_dat.to_csv(f'{dir_rsl}/tst_audio_{seed}_{vld_tst}.csv', index=False)
 				dset_trn.df_dat.to_csv(f'{trn_dir}/trn_audio_{seed}_{vld_tst}.csv', index=False)
 				dset_vld.df_dat.to_csv(f'{vld_dir}/vld_audio_{seed}_{vld_tst}.csv', index=False)
+				if not no_write_fold_txt:
+					txt_fp = os.path.join(dir_rsl, f"comb_{vld_tst}.txt")
+					with open(txt_fp, 'w') as outfile:
+						outfile.write(f'ext={ext}; seed={seed}; ')
+						outfile.write(f'vld_idx={vld_idx}; tst_idx={tst_idx};\n')
+						outfile.write("".join([f'{k}: {v}; ' for k, v in final_args.items()]) +\
+							"\n")
+						outfile.write(f"\nTRN IDs: {dset_trn.patient_list}\n\n")
+						outfile.write(f"VLD IDs: {dset_vld.patient_list}\n\n")
+						outfile.write(f"TST IDs: {dset_tst.patient_list}\n\n")
 
 if __name__ == '__main__':
 	main()
