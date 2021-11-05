@@ -50,6 +50,7 @@ class AudioDataset(Dataset):
 				data_list.append([pid, data, target])
 
 		self.df_dat = pd.DataFrame(data_list, columns=data_headers)
+		self.targets = self.get_targets()
 
 	def __len__(self):
 		"""
@@ -62,6 +63,22 @@ class AudioDataset(Dataset):
 		get item;
 		"""
 		fea = np.load(self.df_dat.loc[idx, 'audio_fn'])
-		mni_brain = self.df_dat.loc['mni_brain']
-		target = self.mni_fp_to_vector[mni_brain].detach().numpy()
+		mni_brain = self.df_dat.loc[idx, 'mni_brain']
+		target = self.mni_fp_to_vector[mni_brain]
 		return fea, target, self.df_dat.loc[idx, 'patient_id']
+
+	def get_targets(self):
+		"""
+		convert target column to np array;
+		"""
+		return np.array([self.mni_fp_to_vector[row['mni_brain']]\
+			for _, row in self.df_dat.iterrows()])
+
+def collate_fn(batch):
+	"""
+	collect audio path, label, patient ID
+	"""
+	aud = [itm[0] for itm in batch]
+	target = np.stack([itm[1] for itm in batch])
+	pid = np.stack([itm[2] for itm in batch])
+	return aud, target, pid

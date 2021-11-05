@@ -14,6 +14,7 @@ from audio_dataset import AudioDataset
 from csv_read import yield_csv_data
 from handle_input import get_args
 from misc import gen_seed_dirs, get_time
+from model import Model
 from net_ie import ImageEncoder
 from net_id import ImageDecoder
 from net_ve import VoiceEncoder
@@ -40,7 +41,7 @@ def gen_mri_latent_vectors(csv_in, image_encoder):
 		mni_brains.add(row['mni_brain'])
 	for mni_brain in mni_brains:
 		torch_array = pad_mni_brain(mni_brain).to(torch.float)
-		mni_brain_to_vector[mni_brain] = image_encoder(torch_array)
+		mni_brain_to_vector[mni_brain] = image_encoder(torch_array).detach().numpy()
 	return mni_brain_to_vector
 
 def get_target_vectors(img_pt_idx, img_pt_txt, csv_info):
@@ -74,6 +75,13 @@ def main():
 	n_epoch = int(args.get('n_epoch', 1))
 	num_seeds = int(args.get('num_seeds', 1))
 	num_folds = int(args.get('num_folds', 5))
+	learning_rate = float(args.get('learning_rate', 1e-3))
+	negative_loss_weight = float(args.get('negative_loss_weight', 1))
+	positive_loss_weight = float(args.get('positive_loss_weight', 1))
+	weights = [negative_loss_weight, positive_loss_weight]
+	debug_stop = args.get('debug_stop')
+	no_save_model = args.get('no_save_model')
+
 	csv_info, ext = select_task(task_id, task_csv_txt)
 	mni_fp_to_vector = get_target_vectors(img_pt_idx, img_pt_txt, csv_info)
 
@@ -95,6 +103,23 @@ def main():
 				dset_trn = AudioDataset(csv_info, 'TRN', **dset_kw)
 				dset_vld = AudioDataset(csv_info, 'VLD', **dset_kw)
 				dset_tst = AudioDataset(csv_info, 'TST', **dset_kw)
+
+				n_concat = 10
+				model_obj = Model(n_concat, nn=VoiceEncoder(), device=device)
+				model_fit_kw = {'n_epoch': n_epoch, 'b_size': 4, 'learning_rate': learning_rate,
+					'weights': weights, 'debug_stop': debug_stop}
+				model_obj.fit(dset_trn, dset_vld, dir_rsl, **model_fit_kw)
+				if not no_save_model:
+					if not os.path.isdir(f"pt_files/{ext}"):
+						os.makedirs(f"pt_files/{ext}")
+					model_obj.save_model(f"./pt_files/{ext}/"+\
+						f"{ext}_{vld_idx}_{seed}_{n_epoch}_{time_ext}_epochs.pt")
+				rsl = model_obj.prob(dset_tst, b_size=64)
+				df_dat = dset_tst.df_dat
+				df_dat['score'] = rsl
+				df_dat.head(2)
+				input()
+
 
 if __name__ == '__main__':
 	main()

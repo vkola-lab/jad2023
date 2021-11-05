@@ -17,7 +17,6 @@ class VoiceEncoder(nn.Module):
     def __init__(self):
         
         super(VoiceEncoder, self).__init__()
-        
         # CNN
         self.module = nn.Sequential(
                 
@@ -91,8 +90,20 @@ class VoiceEncoder(nn.Module):
         out = torch.cat(out)
             
         return out
-        
 
+    def get_scores_loss(self, Xs, ys, loss_fn):
+        """
+        get scores and loss;
+        """
+        scores = self.get_scores(Xs)
+        loss = loss_fn(scores, ys)
+        return scores, loss
+
+    def get_scores(self, Xs):
+        """
+        get scores;
+        """
+        return self(Xs)
 
 if __name__ == '__main__':
     
