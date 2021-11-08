@@ -5,3 +5,7 @@
 *.pylintrc
 *pt_files/
 *results/
+*tmp/
+*tmp/decoded/
+*tmp_decoded/
+*tmp_decoded_old/
