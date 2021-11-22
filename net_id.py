@@ -11,43 +11,25 @@ import torch.nn as nn
 
 
 
-class ImageDecoder(nn.Module):
-    
-    
-#    def __init__(self):
-#        
-#        super(ImageDecoder, self).__init__()
-#        
-#        self.module = nn.Sequential(
-#            nn.ConvTranspose3d(512, 1, (18, 22, 18)))
-#    
-#    
-#    def forward(self, xs):
-#        
-#        xs = torch.unsqueeze(xs, -1)
-#        xs = torch.unsqueeze(xs, -1)
-#        xs = torch.unsqueeze(xs, -1)
-#
-#        return self.module(xs)
-    
+class ImageDecoder(nn.Module):    
     
     def __init__(self, in_size=1, fil_num=32, out_channels=1):
+        
         super().__init__()
+        
         self.in_size = in_size
         self.conva = nn.LeakyReLU()
-        self.deconv1=nn.ConvTranspose3d(16*fil_num,4*fil_num,5,3,1,output_padding=0)
-        self.bn4=nn.BatchNorm3d(4*fil_num)
-        self.deconv2=nn.ConvTranspose3d(4*fil_num,fil_num,5,3,1,output_padding=0)
-        self.bn5=nn.BatchNorm3d(fil_num)
-        self.deconv3=nn.ConvTranspose3d(fil_num,self.in_size,5,3,1,output_padding=0)
-        self.bn6=nn.BatchNorm3d(self.in_size)
-        self.reverse_linear=nn.Linear(512,512*7*8*7) #this is the layer that will build up o
-        kernel_size=(7,8,7) #hard coded at the moment 
-        self.avg_pool=nn.AvgPool3d(kernel_size)
-        self.flatten=nn.Flatten()
+        self.deconv1 = nn.ConvTranspose3d(16*fil_num,4*fil_num,5,3,1,output_padding=0)
+        self.bn4 = nn.BatchNorm3d(4*fil_num)
+        self.deconv2 = nn.ConvTranspose3d(4*fil_num,fil_num,5,3,1,output_padding=0)
+        self.bn5 = nn.BatchNorm3d(fil_num)
+        self.deconv3 = nn.ConvTranspose3d(fil_num,self.in_size,5,3,1,output_padding=0)
+        self.bn6 = nn.BatchNorm3d(self.in_size)
+        self.reverse_linear = nn.Linear(512, 512 * 7 * 8 * 7) #this is the layer that will build up o
+        self.avg_pool = nn.AvgPool3d((7, 8, 7))
+        self.flatten = nn.Flatten()
   
         self.module = nn.Sequential(
-                
                 self.deconv1,
                 self.bn4,
                 self.conva,
@@ -65,7 +47,7 @@ class ImageDecoder(nn.Module):
         x=self.reverse_linear(x)
                 
         #now get latent representation back up to a SHAPE that is suitable for decoder portion
-        x=x.view(-1,512,7,8,7)
+        x=x.view(-1, 512, 7, 8, 7)
         
         #decoder block
         x=self.module(x)

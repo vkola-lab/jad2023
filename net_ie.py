@@ -45,8 +45,8 @@ class ImageEncoder(nn.Module):
         self.conv3 = nn.Conv3d(4*fil_num, 16*fil_num, 5, 3, 2, bias=False)
         self.bn3 = nn.BatchNorm3d(16*fil_num)
         self.conva = nn.LeakyReLU()
-        self.avg_pool=nn.AvgPool3d((7,8,7))
-        self.flatten=nn.Flatten()
+        self.avg_pool = nn.AvgPool3d((7,8,7))
+        self.flatten = nn.Flatten()
 
         self.module=nn.Sequential(
                 self.conv1,
