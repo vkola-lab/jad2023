@@ -30,15 +30,15 @@ if __name__ == '__main__':
         # 'dataset': ['ADNI1', 'ADNI2', 'ADNI3', 'ADNIGO', 'NACC_ALL'],
         'dataset': ['NACC_ALL'],
     } 
-    dst_trn = ImageDataset('../csv/all__.csv', selections, 0, [4, 1])
-    dst_vld = ImageDataset('../csv/all__.csv', selections, 1, [4, 1])
+    dst_trn = ImageDataset('./data/mri_ayan.csv', selections, 0, [4, 1])
+    dst_vld = ImageDataset('./data/mri_ayan.csv', selections, 1, [4, 1])
 
     # training dataloader parameters
     kwargs_ldr_trn = {
         'dataset': dst_trn,
         'batch_size': 4,
         'shuffle': True,
-        'num_workers': 2,
+        'num_workers': 1,
     }
 
     # validation dataloader parameters
@@ -46,7 +46,7 @@ if __name__ == '__main__':
         'dataset': dst_vld,
         'batch_size': 4,
         'shuffle': False,
-        'num_workers': 2
+        'num_workers': 1
     }
 
     # loss and optimizer
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     ]
 
     # devices for training
-    devices = [0, 2, 3]
+    devices = [0, 1, 2, 3]
 
     # train image encoder and decoder
     mdl.fit(
