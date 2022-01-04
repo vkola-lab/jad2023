@@ -21,6 +21,11 @@ def get_args(args):
 	parser.add_argument('-ne', '--n_epoch', help='indicates number of epochs;')
 	parser.add_argument('-ns', '--num_seeds', help='indicates number of seeds to use;')
 	parser.add_argument("-nf", "--num_folds", help='number of cross validation folds;')
+	parser.add_argument('-drs', '--do_rand_seg', action='store_true',
+		help='if set, use random segments instead of static consecutive segments')
+	parser.add_argument('-nptseg', '--num_pt_segments', help='number of random pt segments')
+	parser.add_argument('-ptsegroot', '--pt_segment_root', help='root to save random pt segments')
+	parser.add_argument('-segmin', '--seg_min', help='duration of each random pt segment')
 	parser.add_argument('-lr', '--learning_rate',
 		help='assign the learning rate, default is 1e-4;')
 	parser.add_argument('-db', '--debug_stop', action='store_true',

@@ -2,6 +2,7 @@
 fhs_split_dataframe.py
 module for creating folds, splitting datasets;
 """
+import os
 import random
 import numpy as np
 
@@ -49,3 +50,48 @@ def yield_aud_and_mni(row):
 	yield audio fn and mni vector;
 	"""
 	yield (row['seg_fp'], row['mni_brain'])
+
+def yield_rand_seg_and_mni(row, **kwargs):
+	"""
+	yield <num_pt_segments> random 5 minute segments of pt speech and mni vector
+	"""
+	mni_vector = row['mni_brain']
+
+	num_pt_segments = kwargs.get('num_pt_segments')
+	pt_segment_root = kwargs.get('pt_segment_root')
+	seg_min = kwargs.get('seg_min', 5)
+
+	pt_only_npy = np.load(row['pt_npy'])
+	seg_dur = seg_min * 60
+	assert pt_only_npy.shape[0] % 100 == 0, row['pt_npy']
+	last_start = int(pt_only_npy.shape[0] / 100 - seg_dur)
+	## the latest start we can pick is the length of the audio minus length of segment
+	## length of audio in seconds is shape / 100 bc each MFCC unit represents 10 milliseconds
+	## length of segment is in seconds already;
+	all_pairs = [(s, s + seg_dur) for s in range(last_start + 1)]
+	chosen_pairs = set()
+	for _ in range(num_pt_segments):
+		pair = random.choice(all_pairs)
+		while pair in chosen_pairs:
+			pair = random.choice(all_pairs)
+		chosen_pairs.add(pair)
+		start, end = pair
+		pt_segment_fp = create_pt_segment(row, pt_segment_root, pt_only_npy, start, end)
+		yield (pt_segment_fp, mni_vector)
+
+def create_pt_segment(row, pt_segment_root, pt_only_npy, start, end):
+	"""
+	create pt segment npy;
+	"""
+	id_date = row['id_date']
+	npy_dir = os.path.join(pt_segment_root, id_date.split('_')[0], id_date)
+	npy_fn = f'start_{start}_end_{end}_{id_date}.npy'
+	npy_fp = os.path.join(npy_dir, npy_fn)
+	if not os.path.isfile(npy_fp):
+		if not os.path.isdir(npy_dir):
+			os.makedirs(npy_dir)
+		pt_segment = pt_only_npy[start*100:end*100]
+		## convert timestamp<seconds> to timestamp<10-milliseconds> for MFCC indexing
+		np.save(npy_fp, pt_segment)
+		print(f'created {npy_fp};')
+	return npy_fp

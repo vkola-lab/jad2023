@@ -8,6 +8,7 @@ Created on Wed Oct 27 11:09:36 2021
 import os
 import sys
 import numpy as np
+import fhs_split_dataframe as sdf
 from audio_dataset import AudioDataset
 from handle_input import get_args
 from misc import gen_seed_dirs, get_time
@@ -30,6 +31,10 @@ def main():
 	n_epoch = int(args.get('n_epoch', 1))
 	num_seeds = int(args.get('num_seeds', 1))
 	num_folds = int(args.get('num_folds', 5))
+	do_rand_seg = args.get('do_rand_seg')
+	num_pt_segments = int(args.get('num_pt_segments', 10))
+	pt_segment_root = args.get('pt_segment_root')
+	seg_min = int(args.get('seg_min', 5))
 	learning_rate = float(args.get('learning_rate', 1e-3))
 	negative_loss_weight = float(args.get('negative_loss_weight', 1))
 	positive_loss_weight = float(args.get('positive_loss_weight', 1))
@@ -41,6 +46,8 @@ def main():
 	final_args = {'task_id': task_id, 'img_pt_idx': img_pt_idx,
 		'device': device, 'n_epoch': n_epoch,
 		'num_seeds': num_seeds, 'num_folds': num_folds,
+		'do_rand_seg': do_rand_seg, 'num_pt_segments': num_pt_segments,
+		'pt_segment_root': pt_segment_root, 'seg_min': seg_min,
 		'learning_rate': learning_rate, 'weights': weights,
 		'no_save_model': no_save_model}
 	csv_info, ext = select_task(task_id, task_csv_txt)
@@ -66,6 +73,13 @@ def main():
 					## vld and tst fold can't be the same?
 				dset_kw = {'num_folds': num_folds, 'vld_idx': vld_idx, 'tst_idx': tst_idx,
 					'seed': seed, 'mni_fp_to_vector': mni_fp_to_vector}
+				if do_rand_seg:
+					yield_data_and_target_kw = {'num_pt_segments': num_pt_segments,
+						'pt_segment_root': pt_segment_root,
+						'seg_min': seg_min}
+					dset_kw.update({'yield_data_and_target': sdf.yield_rand_seg_and_mni,
+						'yield_data_and_target_kw': yield_data_and_target_kw})
+
 				dset_trn = AudioDataset(csv_info, 'TRN', **dset_kw)
 				dset_vld = AudioDataset(csv_info, 'VLD', **dset_kw)
 				dset_tst = AudioDataset(csv_info, 'TST', **dset_kw)
