@@ -58,10 +58,10 @@ def yield_rand_seg_and_mni(row, **kwargs):
 	mni_vector = row['mni_brain']
 
 	num_pt_segments = kwargs.get('num_pt_segments')
-	pt_segment_root = kwargs.get('pt_segment_root')
 	seg_min = kwargs.get('seg_min', 5)
 
-	pt_only_npy = np.load(row['pt_npy'])
+	pt_only_fp = row['pt_npy']
+	pt_only_npy = np.load(pt_only_fp)
 	seg_dur = seg_min * 60
 	assert pt_only_npy.shape[0] % 100 == 0, row['pt_npy']
 	last_start = int(pt_only_npy.shape[0] / 100 - seg_dur)
@@ -76,8 +76,10 @@ def yield_rand_seg_and_mni(row, **kwargs):
 			pair = random.choice(all_pairs)
 		chosen_pairs.add(pair)
 		start, end = pair
-		pt_segment_fp = create_pt_segment(row, pt_segment_root, pt_only_npy, start, end)
-		yield (pt_segment_fp, mni_vector)
+		start *= 100
+		end *= 100
+		## convert timestamp<seconds> to timestamp<10-milliseconds> for MFCC indexing
+		yield (pt_only_fp, mni_vector, start, end)
 
 def create_pt_segment(row, pt_segment_root, pt_only_npy, start, end):
 	"""

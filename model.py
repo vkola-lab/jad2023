@@ -3,6 +3,7 @@ model.py
 overarching model class that can take in any neural network object;
 """
 import sys
+from collections import defaultdict
 import torch
 import numpy as np
 from tqdm import tqdm
@@ -70,7 +71,7 @@ class Model:
 				## training loop
 				with tqdm(total=len(dset_trn), desc=f'Epoch {epoch} (TRN)',
 					ascii=True, bar_format='{l_bar}{r_bar}', file=sys.stdout) as pbar:
-					for Xs, ys, _ in dldr_trn:
+					for Xs, ys, *_ in dldr_trn:
 						self.nn.reformat(Xs, self.n_concat)
 						ys = torch.tensor(ys, dtype=torch.float32, device=self.nn.device)
 						self.nn.zero_grad()
@@ -120,19 +121,20 @@ class Model:
 				  'collate_fn': eval_collate_fn}
 		dldr = torch.utils.data.DataLoader(dset, **dl_dr_kwargs)
 		# list to store result (i.e. all outputs)
-		x_fp_to_rsl = {}
+		x_fp_to_rsl = defaultdict(dict)
 		# evaluation loop
 		with torch.set_grad_enabled(False):
 			with tqdm(total=len(dset), desc='Epoch ___ (EVL)', ascii=True,
 				bar_format='{l_bar}{r_bar}', file=sys.stdout) as pbar:
-				for Xs, _, x_filepaths in dldr:
+				for Xs, _, x_filepaths, start_end_list in dldr:
 					self.nn.reformat(Xs, self.n_concat)
 					out = self.nn.get_scores(Xs)
 					# append batch outputs to result
 					results = out.data.cpu().numpy()
 					for idx, x_fp in enumerate(x_filepaths):
-						assert x_fp not in x_fp_to_rsl, x_fp
-						x_fp_to_rsl[x_fp] = results[idx]
+						start_end = start_end_list[idx]
+						assert start_end not in x_fp_to_rsl[x_fp], f'{x_fp}, {start_end}'
+						x_fp_to_rsl[x_fp][start_end] = results[idx]
 					# progress bar
 					pbar.update(len(Xs))
 		# concatenate all batch outputs

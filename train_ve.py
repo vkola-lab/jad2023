@@ -102,10 +102,11 @@ def main():
 					os.makedirs(voice_mri_vector_parent)
 				for df_idx, row in df_dat.iterrows():
 					audio_fn = row['audio_fn']
-					voice_mri_vector = x_fp_to_rsl[audio_fn]
-					base_audio = os.path.basename(audio_fn)
+					start, end = row['start'], row['end']
+					voice_mri_vector = x_fp_to_rsl[audio_fn][(start, end)]
+					base_audio = os.path.splitext(os.path.basename(audio_fn))[0]
 					voice_mri_vector_fp = os.path.join(voice_mri_vector_parent,
-						f'voice_mri_{base_audio}')
+						f'voice_mri_{base_audio}_{start}_{end}.npy')
 					np.save(voice_mri_vector_fp, voice_mri_vector)
 					df_dat.loc[df_idx, 'voice_mri_vector_fp'] = voice_mri_vector_fp
 				df_dat.to_csv(f'{dir_rsl}/tst_audio_{seed}_{vld_tst}.csv', index=False)

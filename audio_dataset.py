@@ -30,7 +30,8 @@ class AudioDataset(Dataset):
 		yield_data_and_target = kwargs.get('yield_data_and_target', sdf.yield_aud_and_mni)
 		yield_data_and_target_kw = kwargs.get('yield_data_and_target_kw', {})
 
-		data_headers = kwargs.get('data_headers', ['patient_id', 'audio_fn', 'mni_brain'])
+		data_headers = kwargs.get('data_headers', ['patient_id', 'audio_fn', 'mni_brain',
+			'start', 'end'])
 
 		self.mni_fp_to_vector = kwargs.get('mni_fp_to_vector')
 
@@ -46,9 +47,8 @@ class AudioDataset(Dataset):
 			pid = get_pid(row, **get_pid_kw)
 			if pid not in current_fold_ids:
 				continue
-			for data, target in yield_data_and_target(row, **yield_data_and_target_kw):
-				data_list.append([pid, data, target])
-
+			for data, target, start, end in yield_data_and_target(row, **yield_data_and_target_kw):
+				data_list.append([pid, data, target, start, end])
 		self.df_dat = pd.DataFrame(data_list, columns=data_headers)
 		self.targets = self.get_targets()
 		self.patient_list = list(set(current_fold_ids))
@@ -66,9 +66,16 @@ class AudioDataset(Dataset):
 		"""
 		audio_fp = self.df_dat.loc[idx, 'audio_fn']
 		fea = np.load(audio_fp)
+		start = self.df_dat.loc[idx, 'start']
+		end = self.df_dat.loc[idx, 'end']
+		if (start is not None and end is not None) and\
+			(not np.isnan(start) and not np.isnan(end)):
+			start = int(start)
+			end = int(end)
+			fea = fea[start:end]
 		mni_brain = self.df_dat.loc[idx, 'mni_brain']
 		target = self.mni_fp_to_vector[mni_brain]
-		return fea, target, self.df_dat.loc[idx, 'patient_id'], audio_fp
+		return fea, target, self.df_dat.loc[idx, 'patient_id'], audio_fp, start, end
 
 	def get_targets(self):
 		"""
@@ -84,4 +91,5 @@ def collate_fn(batch):
 	aud = [itm[0] for itm in batch]
 	target = np.concatenate([itm[1] for itm in batch], axis=0)
 	audio_filepaths = np.stack([itm[3] for itm in batch])
-	return aud, target, audio_filepaths
+	start_end = [(itm[4], itm[5]) for itm in batch]
+	return aud, target, audio_filepaths, start_end
