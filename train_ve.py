@@ -13,7 +13,7 @@ from audio_dataset import AudioDataset
 from handle_input import get_args
 from misc import gen_seed_dirs, get_time
 from model import Model
-from mri_func import get_target_vectors
+from mri_func import get_target_vectors, gan_get_target_vectors
 from net_ve import VoiceEncoder
 from read_txt import select_task
 
@@ -27,6 +27,8 @@ def main():
 	task_id = args.get('task_id', 0)
 	img_pt_txt = args.get('img_pt_txt', 'img_pt.txt')
 	img_pt_idx = args.get('img_pt_idx', 0)
+	encode_idx = args.get('encode_idx', 0)
+	## 0=cnn img autoencoder, 1=gan img autoencoder
 	device = int(args.get('device', 0))
 	n_epoch = int(args.get('n_epoch', 1))
 	num_seeds = int(args.get('num_seeds', 1))
@@ -51,10 +53,13 @@ def main():
 		'learning_rate': learning_rate, 'weights': weights,
 		'no_save_model': no_save_model}
 	csv_info, ext = select_task(task_id, task_csv_txt)
-	mni_fp_to_vector = get_target_vectors(img_pt_idx, img_pt_txt, csv_info)
-
+	get_encoded = get_target_vectors
+	if int(encode_idx) == 1:
+		get_encoded = gan_get_target_vectors
+		assert img_pt_txt == "gan_pt.txt"
+		ext += "_gan"
+	mni_fp_to_vector = get_encoded(img_pt_idx, img_pt_txt, csv_info)
 	seed_to_dir = gen_seed_dirs(num_seeds, ext, n_epoch)
-
 	for seed, dir_rsl in seed_to_dir.items():
 		time_ext = get_time()
 		dir_rsl = f'{dir_rsl}/{time_ext}'

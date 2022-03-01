@@ -10,3 +10,7 @@
 *tmp_decoded/
 *tmp_decoded_old/
 *tmp_*
+*pt
+*gan/
+*gan_autoencoder/
+*test.py

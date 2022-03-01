@@ -17,6 +17,8 @@ def get_args(args):
 		help='path to the img autoencoder pt txt file')
 	parser.add_argument('-img_pt', '--img_pt_idx',
 		help='input to select a img autoencoder pretrained (pt) file;')
+	parser.add_argument('-enc', '--encode_idx',
+		help='0=CNN image autoencoder, 1=GAN image autoencoder')
 	parser.add_argument("-d", "--device", help='gpu device index;')
 	parser.add_argument('-ne', '--n_epoch', help='indicates number of epochs;')
 	parser.add_argument('-ns', '--num_seeds', help='indicates number of seeds to use;')
