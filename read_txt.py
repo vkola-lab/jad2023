@@ -28,3 +28,9 @@ def get_pt_file(pt_idx, pt_txt):
 			if idx == pt_idx:
 				return line
 	return None
+
+def get_tst_csv(tst_idx, tst_txt):
+	"""
+	get tst csv;
+	"""
+	return get_pt_file(tst_idx, tst_txt)
