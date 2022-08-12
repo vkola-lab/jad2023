@@ -7,6 +7,7 @@ from torch.utils.data import Dataset
 import numpy as np
 import pandas as pd
 import fhs_split_dataframe as sdf
+from get_vols import get_vols
 
 class AudioDataset(Dataset):
 	"""
@@ -30,10 +31,17 @@ class AudioDataset(Dataset):
 		yield_data_and_target = kwargs.get('yield_data_and_target', sdf.yield_aud_and_mni)
 		yield_data_and_target_kw = kwargs.get('yield_data_and_target_kw', {})
 
-		data_headers = kwargs.get('data_headers', ['patient_id', 'audio_fn', 'mni_brain',
+		data_headers = kwargs.get('data_headers', ['patient_id', 'mfcc_fp',
 			'start', 'end'])
 
-		self.mni_fp_to_vector = kwargs.get('mni_fp_to_vector')
+		idx_to_region = kwargs.get('idx_to_region')
+		ordered_idx = dict(sorted(idx_to_region.items(), key=lambda item: item[0]))
+		normalize_fsl = kwargs.get('normalize_fsl', False)
+		if not normalize_fsl:
+			data_headers.extend(list(ordered_idx.values()))
+		else:
+			for _, region in ordered_idx.items():
+				data_headers.append(f'{region}_brain_frac')
 
 		assert mode in ['TRN', 'VLD', 'TST'], mode
 		self.mode = mode
@@ -50,9 +58,10 @@ class AudioDataset(Dataset):
 			for data, target, start, end in yield_data_and_target(row, **yield_data_and_target_kw):
 				data_list.append([pid, data, target, start, end])
 		self.df_dat = pd.DataFrame(data_list, columns=data_headers)
-		self.targets = self.get_targets()
 		self.patient_list = list(set(current_fold_ids))
 		self.patient_list.sort()
+		self.ordered_idx = ordered_idx
+		self.normalize_fsl = normalize_fsl
 
 	def __len__(self):
 		"""
@@ -64,7 +73,7 @@ class AudioDataset(Dataset):
 		"""
 		get item;
 		"""
-		audio_fp = self.df_dat.loc[idx, 'audio_fn']
+		audio_fp = self.df_dat.loc[idx, 'mfcc_fp']
 		fea = np.load(audio_fp)
 		start = self.df_dat.loc[idx, 'start']
 		end = self.df_dat.loc[idx, 'end']
@@ -73,16 +82,8 @@ class AudioDataset(Dataset):
 			start = int(start)
 			end = int(end)
 			fea = fea[start:end]
-		mni_brain = self.df_dat.loc[idx, 'mni_brain']
-		target = self.mni_fp_to_vector[mni_brain]
+		target = get_vols(self.ordered_idx, self.df_dat, idx, self.normalize_fsl)
 		return fea, target, self.df_dat.loc[idx, 'patient_id'], audio_fp, start, end
-
-	def get_targets(self):
-		"""
-		convert target column to np array;
-		"""
-		return np.array([self.mni_fp_to_vector[row['mni_brain']]\
-			for _, row in self.df_dat.iterrows()])
 
 def collate_fn(batch):
 	"""
