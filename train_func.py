@@ -4,13 +4,12 @@ train functions
 """
 import os
 import numpy as np
-import fhs_split_dataframe as sdf
 from audio_dataset import AudioDataset
 from misc import get_time
-from model import Model
+from fsl_model import Model
 from tcn import TCN
 
-def gen_dirs(dir_rsl, time_ext):
+def gen_dirs(dir_rsl):
 	"""
 	generate result dir, trn dir, vld dir
 	"""
@@ -24,7 +23,7 @@ def gen_dirs(dir_rsl, time_ext):
 	for dir_to_make in [trn_dir, vld_dir]:
 		if not os.path.isdir(dir_to_make):
 			os.makedirs(dir_to_make)
-	return time_ext, trn_dir, vld_dir
+	return trn_dir, vld_dir
 
 def set_dset_kw(num_folds, vld_idx, tst_idx, seed, do_rand_seg, num_pt_segments, pt_segment_root,
 	seg_min):
@@ -37,7 +36,7 @@ def set_dset_kw(num_folds, vld_idx, tst_idx, seed, do_rand_seg, num_pt_segments,
 		yield_data_and_target_kw = {'num_pt_segments': num_pt_segments,
 			'pt_segment_root': pt_segment_root,
 			'seg_min': seg_min}
-		dset_kw.update({'yield_data_and_target': sdf.yield_rand_seg_and_mni,
+		dset_kw.update({'yield_data_and_target': None,
 			'yield_data_and_target_kw': yield_data_and_target_kw})
 	return dset_kw
 
@@ -78,10 +77,10 @@ def save_vectors(dir_rsl, vld_tst, df_dat, x_fp_to_rsl):
 	if not os.path.isdir(voice_fsl_vector_parent):
 		os.makedirs(voice_fsl_vector_parent)
 	for df_idx, row in df_dat.iterrows():
-		audio_fn = row['audio_fn']
+		mfcc_fp = row['mfcc_fp']
 		start, end = row['start'], row['end']
-		voice_fsl_vector = x_fp_to_rsl[audio_fn][(start, end)]
-		base_audio = os.path.splitext(os.path.basename(audio_fn))[0]
+		voice_fsl_vector = x_fp_to_rsl[mfcc_fp][(start, end)]
+		base_audio = os.path.splitext(os.path.basename(mfcc_fp))[0]
 		voice_fsl_vector_fp = os.path.join(voice_fsl_vector_parent,
 			f'voice_fsl_{base_audio}_{start}_{end}.npy')
 		np.save(voice_fsl_vector_fp, voice_fsl_vector)

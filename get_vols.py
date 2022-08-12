@@ -28,5 +28,5 @@ def get_vols(ordered_idx, df_dat, idx, normalize_fsl):
 	vol_list = []
 	for _, region in ordered_idx.items():
 		row_idx = region if not normalize_fsl else f'{region}_brain_frac'
-		vol_list.append(df_dat.loc[idx, row_idx])
+		vol_list.append(float(df_dat.loc[idx, row_idx]))
 	return np.array(vol_list)

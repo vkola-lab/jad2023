@@ -7,6 +7,7 @@ Created on Wed Oct 27 11:09:36 2021
 """
 import sys
 import train_func as tf
+from get_vols import map_idx_to_region
 from handle_input import get_args
 from misc import gen_seed_dirs
 from read_txt import select_task
@@ -45,15 +46,20 @@ def main():
 
 	csv_info, ext = select_task(task_id, task_csv_txt)
 
+	atlas_xml = 'xml/Hammers_mith_atlases_n30r95_label_indices_SPM12_20170315.xml'
+	idx_to_region = map_idx_to_region(atlas_xml)
+	normalize_fsl = args.get('normalize_fsl', False)
+
 	seed_to_dir = gen_seed_dirs(num_seeds, ext, n_epoch)
 	for seed, dir_rsl in seed_to_dir.items():
-		time_ext, trn_dir, vld_dir = tf.gen_dirs(dir_rsl, time_ext)
+		trn_dir, vld_dir = tf.gen_dirs(dir_rsl)
 		for vld_idx in range(num_folds):
 			for tst_idx in range(num_folds):
 				if vld_idx == tst_idx:
 					continue ## vld and tst fold can't be the same?
 				dset_kw = tf.set_dset_kw(num_folds, vld_idx, tst_idx, seed, do_rand_seg,
 					num_pt_segments, pt_segment_root, seg_min)
+				dset_kw.update({'idx_to_region': idx_to_region, 'normalize_fsl': normalize_fsl})
 				dset_trn, dset_vld, dset_tst = tf.gen_audio_datasets(csv_info, dset_kw)
 
 				model_obj = tf.fit_model(device, n_epoch, learning_rate, weights, debug_stop,

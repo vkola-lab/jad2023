@@ -28,9 +28,6 @@ class AudioDataset(Dataset):
 		get_pid = kwargs.get('get_pid', lambda r: f'{r.idtype}-{r.id.zfill(4)}')
 		get_pid_kw = kwargs.get('get_pid_kw', {})
 
-		yield_data_and_target = kwargs.get('yield_data_and_target', sdf.yield_aud_and_mni)
-		yield_data_and_target_kw = kwargs.get('yield_data_and_target_kw', {})
-
 		data_headers = kwargs.get('data_headers', ['patient_id', 'mfcc_fp',
 			'start', 'end'])
 
@@ -38,11 +35,12 @@ class AudioDataset(Dataset):
 		ordered_idx = dict(sorted(idx_to_region.items(), key=lambda item: item[0]))
 		normalize_fsl = kwargs.get('normalize_fsl', False)
 		if not normalize_fsl:
-			data_headers.extend(list(ordered_idx.values()))
+			regions = list(ordered_idx.values())
 		else:
+			regions = []
 			for _, region in ordered_idx.items():
-				data_headers.append(f'{region}_brain_frac')
-
+				regions.append(f'{region}_brain_frac')
+		data_headers.extend(regions)
 		assert mode in ['TRN', 'VLD', 'TST'], mode
 		self.mode = mode
 		df_raw = pd.read_csv(csv_info, dtype=object)
@@ -55,8 +53,10 @@ class AudioDataset(Dataset):
 			pid = get_pid(row, **get_pid_kw)
 			if pid not in current_fold_ids:
 				continue
-			for data, target, start, end in yield_data_and_target(row, **yield_data_and_target_kw):
-				data_list.append([pid, data, target, start, end])
+			row_data = [pid, row['mfcc_fp'], None, None]
+			row_data.extend([row[r] for r in regions])
+			data_list.append(row_data)
+
 		self.df_dat = pd.DataFrame(data_list, columns=data_headers)
 		self.patient_list = list(set(current_fold_ids))
 		self.patient_list.sort()
