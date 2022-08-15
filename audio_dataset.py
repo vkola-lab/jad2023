@@ -90,7 +90,7 @@ def collate_fn(batch):
 	collect audio path, label, patient ID
 	"""
 	aud = [itm[0] for itm in batch]
-	target = np.concatenate([itm[1] for itm in batch], axis=0)
+	target = np.stack([itm[1] for itm in batch])
 	audio_filepaths = np.stack([itm[3] for itm in batch])
 	start_end = [(itm[4], itm[5]) for itm in batch]
 	return aud, target, audio_filepaths, start_end

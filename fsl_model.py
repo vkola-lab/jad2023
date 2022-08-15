@@ -38,7 +38,7 @@ class Model:
 		fit method
 		"""
 		n_epoch = kwargs.get('n_epoch', 32)
-		b_size = kwargs.get('b_size', 4)
+		b_size = kwargs.get('b_size', 2)
 		learning_rate = kwargs.get('learning_rate', 0.001)
 		weights = kwargs.get('weights', [])
 		debug_stop = kwargs.get('debug_stop', False)
@@ -52,7 +52,7 @@ class Model:
 		opt = torch.optim.Adam(self.nn.parameters(), lr=learning_rate)
 
 		train_epochs_kw = {'debug_stop': debug_stop, 'n_epoch': n_epoch, 'opt': opt,
-			'loss_fn': loss_fn, 'dir_rsl': dir_rsl}
+			'loss_fn': loss_fn, 'dir_rsl': dir_rsl, 'b_size': b_size}
 		self.train_epochs(dset_trn, dset_vld, dldr_trn, **train_epochs_kw)
 
 	def train_epochs(self, dset_trn, dset_vld, dldr_trn, **kwargs):
@@ -63,7 +63,9 @@ class Model:
 		n_epoch = kwargs.get('n_epoch')
 		opt = kwargs.get('opt')
 		loss_fn = kwargs.get('loss_fn')
+		b_size = kwargs.get('b_size')
 		# dir_rsl = kwargs.get('dir_rsl')
+		target = torch.tensor(np.ones(b_size), device=self.device)
 		if not debug_stop:
 			for epoch in range(n_epoch):
 				## set model to training mode
@@ -76,7 +78,7 @@ class Model:
 						self.nn.reformat(Xs, self.n_concat)
 						ys = torch.tensor(ys, dtype=torch.float32, device=self.nn.device)
 						self.nn.zero_grad()
-						_, loss = self.nn.get_scores_loss(Xs, ys, loss_fn)
+						_, loss = self.nn.get_scores_loss(Xs, ys, loss_fn, target=target)
 						loss.backward()
 						opt.step()
 						# pred = torch.argmax(scores, 1)

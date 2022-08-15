@@ -54,7 +54,7 @@ def fit_model(device, n_epoch, learning_rate, weights, debug_stop, dset_trn, dse
 	fit model
 	"""
 	model_obj = Model(10, nn=TCN(device), device=device)
-	model_fit_kw = {'n_epoch': n_epoch, 'b_size': 4, 'learning_rate': learning_rate,
+	model_fit_kw = {'n_epoch': n_epoch, 'b_size': 2, 'learning_rate': learning_rate,
 		'weights': weights, 'debug_stop': debug_stop}
 	model_obj.fit(dset_trn, dset_vld, dir_rsl, **model_fit_kw)
 	return model_obj
@@ -81,8 +81,9 @@ def save_vectors(dir_rsl, vld_tst, df_dat, x_fp_to_rsl):
 		start, end = row['start'], row['end']
 		voice_fsl_vector = x_fp_to_rsl[mfcc_fp][(start, end)]
 		base_audio = os.path.splitext(os.path.basename(mfcc_fp))[0]
-		voice_fsl_vector_fp = os.path.join(voice_fsl_vector_parent,
-			f'voice_fsl_{base_audio}_{start}_{end}.npy')
+		fname = f'voice_fsl_{base_audio}_{start}_{end}.npy'
+		fname = fname.replace('_None_None', '')
+		voice_fsl_vector_fp = os.path.join(voice_fsl_vector_parent, fname)
 		np.save(voice_fsl_vector_fp, voice_fsl_vector)
 		df_dat.loc[df_idx, 'voice_fsl_vector_fp'] = voice_fsl_vector_fp
 

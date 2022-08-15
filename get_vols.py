@@ -12,7 +12,7 @@ def map_idx_to_region(atlas_xml):
 	"""
 	ptrn = r"<label><index>(\d+)</index><name>(.*)</name></label>"
 	compiled = re.compile(ptrn)
-	idx_to_region = {0: 'background'}
+	idx_to_region = {}
 	with open(atlas_xml, 'r') as infile:
 		for line in infile:
 			search = compiled.search(line)
