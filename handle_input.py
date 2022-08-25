@@ -40,4 +40,6 @@ def get_args(args):
 		help='if set, models will not be saved;')
 	parser.add_argument('-nwft', '--no_write_fold_txt', action='store_true',
 		help='if set, fold txt files are not written;')
+	parser.add_argument('-ri', '--region_indices', nargs='*',
+		help='region indices to use, default is all regions')
 	return parser.parse_args(args).__dict__

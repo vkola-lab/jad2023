@@ -11,12 +11,12 @@ class TCN(nn.Module):
 	"""
 	TCN class;
 	"""
-	def __init__(self, device):
+	def __init__(self, device, **kwargs):
 		"""
 		init method;
 		"""
 		super(TCN, self).__init__()
-		self.ys_len = 95
+		self.ys_len = kwargs.get('ys_len')
 		self.device = device     # 'cpu' or 'cuda:x'
 		self.tcn = nn.Sequential(
 			# nn.BatchNorm1d(13),
@@ -107,6 +107,8 @@ class TCN(nn.Module):
 		get scores and loss;
 		"""
 		scores = self(Xs)
+		if len(scores.shape) == 1:
+			scores = torch.unsqueeze(scores, 1)
 		# Xs = np.array(Xs)
 		if target is None:
 			loss = loss_fn(scores, ys)

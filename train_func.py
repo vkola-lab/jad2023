@@ -49,13 +49,14 @@ def gen_audio_datasets(csv_info, dset_kw):
 	dset_tst = AudioDataset(csv_info, 'TST', **dset_kw)
 	return dset_trn, dset_vld, dset_tst
 
-def fit_model(device, n_epoch, learning_rate, weights, debug_stop, dset_trn, dset_vld, dir_rsl):
+def fit_model(device, n_epoch, learning_rate, weights, debug_stop, dset_trn, dset_vld, dir_rsl,
+	loss_fn, ys_len):
 	"""
 	fit model
 	"""
-	model_obj = Model(10, nn=TCN(device), device=device)
+	model_obj = Model(10, nn=TCN(device, **{'ys_len': ys_len}), device=device)
 	model_fit_kw = {'n_epoch': n_epoch, 'b_size': 2, 'learning_rate': learning_rate,
-		'weights': weights, 'debug_stop': debug_stop}
+		'weights': weights, 'debug_stop': debug_stop, 'loss_fn': loss_fn}
 	model_obj.fit(dset_trn, dset_vld, dir_rsl, **model_fit_kw)
 	return model_obj
 

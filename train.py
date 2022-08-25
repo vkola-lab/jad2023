@@ -6,6 +6,7 @@ Created on Wed Oct 27 11:09:36 2021
 # -*- coding: utf-8 -*-
 """
 import sys
+import torch
 import train_func as tf
 from get_vols import map_idx_to_region
 from handle_input import get_args
@@ -35,6 +36,7 @@ def main():
 	debug_stop = args.get('debug_stop')
 	no_save_model = args.get('no_save_model')
 	no_write_fold_txt = args.get('no_write_fold_txt')
+	region_indices = args.get('region_indices', [56])
 
 	final_args = {'task_id': task_id,
 		'device': device, 'n_epoch': n_epoch,
@@ -42,15 +44,28 @@ def main():
 		'do_rand_seg': do_rand_seg, 'num_pt_segments': num_pt_segments,
 		'pt_segment_root': pt_segment_root, 'seg_min': seg_min,
 		'learning_rate': learning_rate, 'weights': weights,
-		'no_save_model': no_save_model}
+		'no_save_model': no_save_model, 'region_indices': region_indices}
 
 	csv_info, ext = select_task(task_id, task_csv_txt)
 
 	atlas_xml = 'xml/Hammers_mith_atlases_n30r95_label_indices_SPM12_20170315.xml'
 	idx_to_region = map_idx_to_region(atlas_xml)
-	normalize_fsl = args.get('normalize_fsl', False)
+
+	if region_indices is not None:
+		region_indices = [int(i) for i in region_indices]
+		idx_to_region = {i: idx_to_region[i] for i in region_indices}
+		ext += '_regions['
+		for idx, _ in idx_to_region.items():
+			ext += f'{idx}_'
+		ext += ']'
+	normalize_fsl = args.get('normalize_fsl', True)
+	if normalize_fsl:
+		ext += '_normalize_fsl'
+	loss_fn, loss_ext = torch.nn.MSELoss, 'MSELoss'
+	ext += f'_{loss_ext}'
 
 	seed_to_dir = gen_seed_dirs(num_seeds, ext, n_epoch)
+
 	for seed, dir_rsl in seed_to_dir.items():
 		trn_dir, vld_dir = tf.gen_dirs(dir_rsl)
 		for vld_idx in range(num_folds):
@@ -63,7 +78,7 @@ def main():
 				dset_trn, dset_vld, dset_tst = tf.gen_audio_datasets(csv_info, dset_kw)
 
 				model_obj = tf.fit_model(device, n_epoch, learning_rate, weights, debug_stop,
-					dset_trn, dset_vld, dir_rsl)
+					dset_trn, dset_vld, dir_rsl, loss_fn, len(idx_to_region))
 
 				vld_tst = f'vld_{vld_idx}_tst_{tst_idx}'
 

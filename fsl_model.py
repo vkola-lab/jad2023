@@ -42,17 +42,20 @@ class Model:
 		learning_rate = kwargs.get('learning_rate', 0.001)
 		weights = kwargs.get('weights', [])
 		debug_stop = kwargs.get('debug_stop', False)
-
+		loss_fn = kwargs.get('loss_fn')
 		dataloader_kw = {'batch_size': b_size, 'shuffle': False, 'num_workers': 1,
 			'collate_fn': collate_fn, 'sampler': None}
 		dldr_trn = torch.utils.data.DataLoader(dset_trn, **dataloader_kw)
 		weights = torch.FloatTensor(weights).cuda(self.device)
-		loss_fn = torch.nn.CosineEmbeddingLoss()
-		# loss_fn = torch.nn.MSELoss()
+		if loss_fn == torch.nn.CosineEmbeddingLoss:
+			target = torch.tensor(np.ones(b_size), device=self.device)
+		else:
+			target = None
+		loss_fn = loss_fn()
 		opt = torch.optim.Adam(self.nn.parameters(), lr=learning_rate)
 
 		train_epochs_kw = {'debug_stop': debug_stop, 'n_epoch': n_epoch, 'opt': opt,
-			'loss_fn': loss_fn, 'dir_rsl': dir_rsl, 'b_size': b_size}
+			'loss_fn': loss_fn, 'dir_rsl': dir_rsl, 'b_size': b_size, 'target': target}
 		self.train_epochs(dset_trn, dset_vld, dldr_trn, **train_epochs_kw)
 
 	def train_epochs(self, dset_trn, dset_vld, dldr_trn, **kwargs):
@@ -64,8 +67,9 @@ class Model:
 		opt = kwargs.get('opt')
 		loss_fn = kwargs.get('loss_fn')
 		b_size = kwargs.get('b_size')
+		target = kwargs.get('target')
 		# dir_rsl = kwargs.get('dir_rsl')
-		target = torch.tensor(np.ones(b_size), device=self.device)
+
 		if not debug_stop:
 			for epoch in range(n_epoch):
 				## set model to training mode
