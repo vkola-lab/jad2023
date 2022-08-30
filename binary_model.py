@@ -7,7 +7,7 @@ from collections import defaultdict
 import torch
 import numpy as np
 from tqdm import tqdm
-from audio_dataset import collate_fn
+from binary_audio_dataset import collate_fn
 from net_ve import VoiceEncoder
 from misc import calc_performance_metrics, show_performance_metrics
 
@@ -63,17 +63,18 @@ class BinaryModel:
 		opt = kwargs.get('opt')
 		loss_fn = kwargs.get('loss_fn')
 		dir_rsl = kwargs.get('dir_rsl')
+		vld_mcc = -1
 		if not debug_stop:
 			for epoch in range(n_epoch):
 				## set model to training mode
 				self.nn.train()
-				cum_loss, count = 0, 0
+				cum_loss, cum_corr, count = 0, 0, 0
 				## training loop
 				with tqdm(total=len(dset_trn), desc=f'Epoch {epoch} (TRN)',
 					ascii=True, bar_format='{l_bar}{r_bar}', file=sys.stdout) as pbar:
 					for Xs, ys, *_ in dldr_trn:
 						self.nn.reformat(Xs, self.n_concat)
-						ys = torch.tensor(ys, dtype=torch.float32, device=self.nn.device)
+						ys = torch.tensor(ys, dtype=torch.long, device=self.nn.device)
 						self.nn.zero_grad()
 						scores, loss = self.nn.get_scores_loss(Xs, ys, loss_fn)
 						loss.backward()
@@ -148,8 +149,9 @@ class BinaryModel:
 						x_fp_to_rsl[x_fp][start_end] = results[idx]
 					# progress bar
 					pbar.update(len(Xs))
+		all_results = np.concatenate(all_results)
 		# concatenate all batch outputs
-		return x_fp_to_rsl, results
+		return x_fp_to_rsl, all_results
 
 	def save_model(self, filepath):
 		"""

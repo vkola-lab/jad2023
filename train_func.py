@@ -4,9 +4,7 @@ train functions
 """
 import os
 import numpy as np
-from audio_dataset import AudioDataset
 from misc import get_time
-from fsl_model import Model
 from tcn import TCN
 
 def gen_dirs(dir_rsl):
@@ -26,12 +24,12 @@ def gen_dirs(dir_rsl):
 	return trn_dir, vld_dir
 
 def set_dset_kw(num_folds, vld_idx, tst_idx, seed, do_rand_seg, num_pt_segments, pt_segment_root,
-	seg_min):
+	seg_min, audio_idx, get_label):
 	"""
 	setting dataset kwargs
 	"""
 	dset_kw = {'num_folds': num_folds, 'vld_idx': vld_idx, 'tst_idx': tst_idx,
-		'seed': seed}
+		'seed': seed, 'audio_idx': audio_idx, 'get_label': get_label}
 	if do_rand_seg:
 		yield_data_and_target_kw = {'num_pt_segments': num_pt_segments,
 			'pt_segment_root': pt_segment_root,
@@ -40,22 +38,29 @@ def set_dset_kw(num_folds, vld_idx, tst_idx, seed, do_rand_seg, num_pt_segments,
 			'yield_data_and_target_kw': yield_data_and_target_kw})
 	return dset_kw
 
-def gen_audio_datasets(csv_info, dset_kw):
+def gen_audio_datasets(csv_info, dset_kw, audio_dset):
 	"""
 	get audio datasets
 	"""
-	dset_trn = AudioDataset(csv_info, 'TRN', **dset_kw)
-	dset_vld = AudioDataset(csv_info, 'VLD', **dset_kw)
-	dset_tst = AudioDataset(csv_info, 'TST', **dset_kw)
+	dset_trn = audio_dset(csv_info, 'TRN', **dset_kw)
+	dset_vld = audio_dset(csv_info, 'VLD', **dset_kw)
+	dset_tst = audio_dset(csv_info, 'TST', **dset_kw)
 	return dset_trn, dset_vld, dset_tst
 
-def fit_model(device, n_epoch, learning_rate, weights, debug_stop, dset_trn, dset_vld, dir_rsl,
-	loss_fn, ys_len):
+def get_model(model, ys_len, channels, device):
+	"""
+	get model
+	"""
+	model_obj = model(10, nn=TCN(device, **{'ys_len': ys_len, 'channels': channels}),
+		device=device)
+	return model_obj
+
+def fit_model(n_epoch, learning_rate, weights, debug_stop, dset_trn, dset_vld, dir_rsl,
+	loss_fn, model_obj):
 	"""
 	fit model
 	"""
-	model_obj = Model(10, nn=TCN(device, **{'ys_len': ys_len}), device=device)
-	model_fit_kw = {'n_epoch': n_epoch, 'b_size': 2, 'learning_rate': learning_rate,
+	model_fit_kw = {'n_epoch': n_epoch, 'b_size': 4, 'learning_rate': learning_rate,
 		'weights': weights, 'debug_stop': debug_stop, 'loss_fn': loss_fn}
 	model_obj.fit(dset_trn, dset_vld, dir_rsl, **model_fit_kw)
 	return model_obj

@@ -8,6 +8,8 @@ Created on Wed Oct 27 11:09:36 2021
 import sys
 import torch
 import train_func as tf
+from binary_audio_dataset import BinaryAudioDataset
+from binary_model import BinaryModel
 from handle_input import get_args
 from misc import gen_seed_dirs
 from read_txt import select_task
@@ -48,6 +50,12 @@ def main():
 
 	seed_to_dir = gen_seed_dirs(num_seeds, ext, n_epoch)
 
+	audio_idx = 'osm_npy'
+	channels = 5
+	ext += f'_{audio_idx}'
+	get_label = lambda d: int(d['is_de_and_ad'])
+	audio_dset = BinaryAudioDataset
+	loss_fn = torch.nn.CrossEntropyLoss
 	for seed, dir_rsl in seed_to_dir.items():
 		trn_dir, vld_dir = tf.gen_dirs(dir_rsl)
 		for vld_idx in range(num_folds):
@@ -55,13 +63,13 @@ def main():
 				if vld_idx == tst_idx:
 					continue ## vld and tst fold can't be the same?
 				dset_kw = tf.set_dset_kw(num_folds, vld_idx, tst_idx, seed, do_rand_seg,
-					num_pt_segments, pt_segment_root, seg_min)
+					num_pt_segments, pt_segment_root, seg_min, audio_idx, get_label)
 
-				dset_trn, dset_vld, dset_tst = tf.gen_audio_datasets(csv_info, dset_kw)
+				dset_trn, dset_vld, dset_tst = tf.gen_audio_datasets(csv_info, dset_kw, audio_dset)
 				ys_len = 2 ## ?
-				loss_fn = torch.nn.CrossEntropyLoss
-				model_obj = tf.fit_model(device, n_epoch, learning_rate, weights, debug_stop,
-					dset_trn, dset_vld, dir_rsl, loss_fn, ys_len)
+				model_obj = tf.get_model(BinaryModel, ys_len, channels, device)
+				model_obj = tf.fit_model(n_epoch, learning_rate, weights, debug_stop,
+					dset_trn, dset_vld, dir_rsl, loss_fn, model_obj)
 
 				vld_tst = f'vld_{vld_idx}_tst_{tst_idx}'
 

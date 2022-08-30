@@ -17,10 +17,11 @@ class TCN(nn.Module):
 		"""
 		super(TCN, self).__init__()
 		self.ys_len = kwargs.get('ys_len')
+		channels = kwargs.get('channels')
 		self.device = device     # 'cpu' or 'cuda:x'
 		self.tcn = nn.Sequential(
 			# nn.BatchNorm1d(13),
-			nn.Conv1d(in_channels=13, out_channels=32, kernel_size=1, stride=1, padding=0),
+			nn.Conv1d(in_channels=channels, out_channels=32, kernel_size=1, stride=1, padding=0),
 			# nn.BatchNorm1d(32),
 			nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3, stride=1, padding=1),
 			nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3, stride=1, padding=1),
