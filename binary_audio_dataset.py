@@ -30,6 +30,7 @@ class BinaryAudioDataset(Dataset):
 		self.audio_idx = kwargs.get('audio_idx')
 		self.get_label = kwargs.get('get_label')
 		self.get_fea = kwargs.get('get_fea', np.load)
+		self.get_fea_kw = kwargs.get('get_fea_kw', {})
 		data_headers = kwargs.get('data_headers', ['patient_id', self.audio_idx, 'label',
 			'start', 'end'])
 
@@ -65,7 +66,7 @@ class BinaryAudioDataset(Dataset):
 		get item;
 		"""
 		audio_fp = self.df_dat.loc[idx, self.audio_idx]
-		fea = self.get_fea(audio_fp)
+		fea = self.get_fea(audio_fp, **self.get_fea_kw)
 		start = self.df_dat.loc[idx, 'start']
 		end = self.df_dat.loc[idx, 'end']
 		if (start is not None and end is not None) and\

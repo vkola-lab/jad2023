@@ -11,6 +11,7 @@ import train_func as tf
 from binary_audio_dataset import BinaryAudioDataset
 from binary_model import BinaryModel
 from handle_input import get_args
+from load_all_data import load_all_data
 from misc import gen_seed_dirs
 from read_txt import select_task
 
@@ -48,14 +49,24 @@ def main():
 
 	csv_info, ext = select_task(task_id, task_csv_txt)
 
-	seed_to_dir = gen_seed_dirs(num_seeds, ext, n_epoch)
-
 	audio_idx = 'osm_npy'
 	channels = 5
 	ext += f'_{audio_idx}'
-	get_label = lambda d: int(d['is_de_and_ad'])
+
+	task_id = int(task_id)
+	if task_id in [0, 1]:
+		get_label = lambda d: int(d['is_de_and_ad'])
+	elif task_id == 2:
+		get_label = lambda d: int(d['is_demented'])
+	else:
+		raise AssertionError(f'no get label for task id {task_id}')
 	audio_dset = BinaryAudioDataset
 	loss_fn = torch.nn.CrossEntropyLoss
+	ext += f'_{str(negative_loss_weight)}_{str(positive_loss_weight)}'
+
+	seed_to_dir = gen_seed_dirs(num_seeds, ext, n_epoch)
+	all_npy = load_all_data(csv_info, audio_idx)
+	get_fea = lambda fp, **kw: kw['all_npy'][fp]
 	for seed, dir_rsl in seed_to_dir.items():
 		trn_dir, vld_dir = tf.gen_dirs(dir_rsl)
 		for vld_idx in range(num_folds):
@@ -64,7 +75,7 @@ def main():
 					continue ## vld and tst fold can't be the same?
 				dset_kw = tf.set_dset_kw(num_folds, vld_idx, tst_idx, seed, do_rand_seg,
 					num_pt_segments, pt_segment_root, seg_min, audio_idx, get_label)
-
+				dset_kw.update({'get_fea': get_fea, 'get_fea_kw': {'all_npy': all_npy}})
 				dset_trn, dset_vld, dset_tst = tf.gen_audio_datasets(csv_info, dset_kw, audio_dset)
 				ys_len = 2 ## ?
 				model_obj = tf.get_model(BinaryModel, ys_len, channels, device)
