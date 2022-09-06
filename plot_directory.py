@@ -108,7 +108,7 @@ def main():
 		mtr_all = defaultdict(list)
 		print(dir_rsl)
 		print(len(lst_csv))
-		if lst_csv == [] or len(lst_csv) != 5:
+		if lst_csv == [] or len(lst_csv) != 20:
 			continue
 		print(f"{len(lst_csv)} csvs found;")
 		fn_metrics = {}
@@ -143,8 +143,12 @@ def main():
 		for k, v in mtr_all.items():
 			collect_output('{}: {:.3f}, {:.3f}'.format(k, np.mean(v), np.std(v)),
 				current_string_list, only_print=only_print)
-		curr_hmp_roc = get_roc_info(lst_lbl, lst_scr)
-		curr_hmp_pr  = get_pr_info(lst_lbl, lst_scr)
+		try:
+			curr_hmp_roc = get_roc_info(lst_lbl, lst_scr)
+			curr_hmp_pr  = get_pr_info(lst_lbl, lst_scr)
+		except TypeError as error:
+			print(error)
+			continue
 		legend_dict = {0: ('magenta', 'CNN')}
 		fig_name = f'{dir_rsl}/individual_roc.png'
 		plot_individual_curve(curr_hmp_roc, legend_dict, 'roc', fig_name)

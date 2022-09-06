@@ -23,6 +23,10 @@ def load_all_data(csv_in, audio_idx):
 	print(f'starting to load all data {start};')
 	for audio_fp, _ in tqdm(final.items()):
 		final[audio_fp] = np.load(audio_fp)
+		np_arr = final[audio_fp]
+		if len(np_arr.shape) == 3:
+			final[audio_fp] = final[audio_fp][0]
+		print(final[audio_fp].shape)
 	end = datetime.now()
 	print(f'loaded {len(final)} items in {end - start};')
 	return final

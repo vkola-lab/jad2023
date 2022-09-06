@@ -13,6 +13,8 @@ def get_args(args):
 		help='path to the task csv txt file, defaults to task_csv.txt')
 	parser.add_argument('-ti', '--task_id',
 		help='input to select a task, which selects a csv, ext, and get_label;')
+	parser.add_argument('-ai', '--audio_idx',
+		help='input to select the type of audio data (osm_npy=0, mfcc=1);')
 	parser.add_argument('-ipt', '--img_pt_txt',
 		help='path to the img autoencoder pt txt file')
 	parser.add_argument('-img_pt', '--img_pt_idx',

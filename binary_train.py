@@ -23,6 +23,7 @@ def main():
 	args = {k: v for k, v in args.items() if v is not None}
 	task_csv_txt = args.get('task_csv_txt', 'task_csvs.txt')
 	task_id = args.get('task_id', 0)
+	audio_idx = int(args.get('audio_idx', 0))
 	device = int(args.get('device', 0))
 	n_epoch = int(args.get('n_epoch', 1))
 	num_seeds = int(args.get('num_seeds', 1))
@@ -49,8 +50,8 @@ def main():
 
 	csv_info, ext = select_task(task_id, task_csv_txt)
 
-	audio_idx = 'osm_npy'
-	channels = 5
+	channels = 5 if audio_idx == 0 else 13
+	audio_idx = 'osm_npy' if audio_idx == 0 else 'mfcc_npy'
 	ext += f'_{audio_idx}'
 
 	task_id = int(task_id)
