@@ -54,6 +54,10 @@ class BinaryAudioDataset(Dataset):
 		self.labels = self.df_dat.label.to_numpy()
 		self.patient_list = list(set(current_fold_ids))
 		self.patient_list.sort()
+		self.num_patients = len(self.patient_list)
+		self.num_audio = len(data_list)
+		self.num_positive_audio = sum([n for _, _, n, *_ in data_list])
+		self.num_negative_audio = self.num_audio - self.num_positive_audio
 
 	def __len__(self):
 		"""

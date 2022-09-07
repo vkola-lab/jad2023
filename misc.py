@@ -55,7 +55,14 @@ def calc_performance_metrics(scr, lbl):
 	prd = (scr > .5) * 1
 	# metrics
 	met['mat'] = confusion_matrix(y_true=lbl, y_pred=prd)
-	TN, FP, FN, TP = met['mat'].ravel()
+	try:
+		TN, FP, FN, TP = met['mat'].ravel()
+	except ValueError as err:
+		print(met['mat'])
+		print(met['mat'].shape)
+		print(lbl.shape)
+		print(prd.shape)
+		raise err
 	N = TN + TP + FN + FP
 	S = (TP + FN) / N
 	P = (TP + FP) / N

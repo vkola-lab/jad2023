@@ -101,6 +101,15 @@ def save_csvs(df_dat, dset_trn, dset_vld, dir_rsl, seed, vld_tst, trn_dir, vld_d
 	dset_trn.df_dat.to_csv(f'{trn_dir}/trn_audio_{seed}_{vld_tst}.csv', index=False)
 	dset_vld.df_dat.to_csv(f'{vld_dir}/vld_audio_{seed}_{vld_tst}.csv', index=False)
 
+def dset_info_to_txt(dataset, ext):
+	"""
+	write dset info to txt;
+	"""
+	line = f"{ext}: num_patients: {dataset.num_patients}, num_audio: "+\
+		f"{dataset.num_audio} [negative_audio={dataset.num_negative_audio}, "+\
+		f"positive_audio={dataset.num_positive_audio}]\n"
+	return line
+
 def write_fold_txt(no_write_fold_txt, dir_rsl, vld_tst, ext, seed, vld_idx, tst_idx, final_args,
 	dset_trn, dset_vld, dset_tst):
 	"""
@@ -108,11 +117,17 @@ def write_fold_txt(no_write_fold_txt, dir_rsl, vld_tst, ext, seed, vld_idx, tst_
 	"""
 	if not no_write_fold_txt:
 		txt_fp = os.path.join(dir_rsl, f"comb_{vld_tst}.txt")
+		trn_line = dset_info_to_txt(dset_trn, 'TRN')
+		vld_line = dset_info_to_txt(dset_vld, 'VLD')
+		tst_line = dset_info_to_txt(dset_tst, 'TST')
 		with open(txt_fp, 'w') as outfile:
 			outfile.write(f'ext={ext}; seed={seed}; ')
 			outfile.write(f'vld_idx={vld_idx}; tst_idx={tst_idx};\n')
 			outfile.write("".join([f'{k}: {v}; ' for k, v in final_args.items()]) +\
 				"\n")
+			outfile.write(trn_line)
+			outfile.write(vld_line)
+			outfile.write(tst_line)
 			outfile.write(f"\nTRN IDs: {dset_trn.patient_list}\n\n")
 			outfile.write(f"VLD IDs: {dset_vld.patient_list}\n\n")
 			outfile.write(f"TST IDs: {dset_tst.patient_list}\n\n")
