@@ -54,7 +54,7 @@ def calc_performance_metrics(scr, lbl):
 	# prediction
 	prd = (scr > .5) * 1
 	# metrics
-	met['mat'] = confusion_matrix(y_true=lbl, y_pred=prd)
+	met['mat'] = confusion_matrix(y_true=lbl, y_pred=prd, labels=[0, 1])
 	try:
 		TN, FP, FN, TP = met['mat'].ravel()
 	except ValueError as err:
@@ -62,6 +62,8 @@ def calc_performance_metrics(scr, lbl):
 		print(met['mat'].shape)
 		print(lbl.shape)
 		print(prd.shape)
+		print(lbl)
+		print(prd)
 		raise err
 	N = TN + TP + FN + FP
 	S = (TP + FN) / N
