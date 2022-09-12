@@ -57,7 +57,7 @@ def main():
 	task_id = int(task_id)
 	if task_id in [0, 1]:
 		get_label = lambda d: int(d['is_de_and_ad'])
-	elif task_id == 2:
+	elif task_id in [2, 3]:
 		get_label = lambda d: int(d['is_demented'])
 	else:
 		raise AssertionError(f'no get label for task id {task_id}')

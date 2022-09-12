@@ -66,7 +66,7 @@ class TCN(nn.Module):
 		)
 		# linear layer
 		self.mlp = nn.Sequential(
-			nn.Linear(512, self.ys_len, bias=False)
+			nn.Linear(512, self.ys_len, bias=True)
 		)
 		self.tcn.to(device)
 		self.mlp.to(device)
