@@ -88,7 +88,7 @@ def main():
 	# 	inner_dirs.extend(get_dir_list(seed_dir))
 	for _, dir_rsl in enumerate(seed_list):
 		current_string_list = [dir_rsl + "\n"]
-		mode = 'audio_avg'
+		mode = 'chunk'
 		# list of all csv files
 		num_csvs = None
 		if num_csvs is None:
@@ -114,8 +114,8 @@ def main():
 		fn_metrics = {}
 		for fn in lst_csv:
 			fn_base = os.path.basename(fn)
-			if not fn_base.startswith('audio'):
-				continue
+			# if not fn_base.startswith('audio'):
+			# 	continue
 			# read from csv
 			df = pd.read_csv(fn)
 			# get scores and labels
@@ -126,6 +126,14 @@ def main():
 				tmp = df.groupby('audio_fn').mean().to_numpy()
 				lbl = tmp[:,0].astype(np.int)
 				scr = tmp[:,-1]
+			else:
+				raise AssertionError(f'invalid mode: {mode}')
+			print(fn)
+			print(len(scr))
+			print(np.count_nonzero(np.isnan(scr)))
+			print(len(lbl))
+			print(np.count_nonzero(np.isnan(lbl)))
+			input()
 			mtr = calc_performance_metrics(scr, lbl)
 			for k, mtr_val in mtr.items():
 				if k == 'mat':
@@ -134,6 +142,7 @@ def main():
 			fn_metrics[fn] = {mk: mv for mk, mv in mtr.items() if mk != 'mat'}
 			lst_lbl.append(lbl)
 			lst_scr.append(scr)
+		print(f'loaded {len(fn_metrics)} results;')
 		for filename, fn_mtr in fn_metrics.items():
 			collect_output(filename, current_string_list, only_print=only_print)
 			for metric, metric_val in fn_mtr.items():
@@ -146,7 +155,7 @@ def main():
 		try:
 			curr_hmp_roc = get_roc_info(lst_lbl, lst_scr)
 			curr_hmp_pr  = get_pr_info(lst_lbl, lst_scr)
-		except TypeError as error:
+		except (TypeError, ValueError) as error:
 			print(error)
 			continue
 		legend_dict = {0: ('magenta', 'CNN')}
