@@ -8,7 +8,6 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from binary_audio_dataset import collate_fn
-from net_ve import VoiceEncoder
 from misc import calc_performance_metrics, show_performance_metrics
 
 class BinaryModel:
