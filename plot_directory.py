@@ -128,12 +128,12 @@ def main():
 				scr = tmp[:,-1]
 			else:
 				raise AssertionError(f'invalid mode: {mode}')
-			print(fn)
-			print(len(scr))
-			print(np.count_nonzero(np.isnan(scr)))
-			print(len(lbl))
-			print(np.count_nonzero(np.isnan(lbl)))
-			input()
+			# print(fn)
+			# print(len(scr))
+			# print(np.count_nonzero(np.isnan(scr)))
+			# print(len(lbl))
+			# print(np.count_nonzero(np.isnan(lbl)))
+			# input()
 			mtr = calc_performance_metrics(scr, lbl)
 			for k, mtr_val in mtr.items():
 				if k == 'mat':
