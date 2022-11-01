@@ -44,7 +44,8 @@ class BinaryModel:
 		debug_stop = kwargs.get('debug_stop', False)
 		loss_fn = kwargs.get('loss_fn', torch.nn.CrossEntropyLoss)
 		shuffle = True ## changed 09-20-22
-		dataloader_kw = {'batch_size': b_size, 'shuffle': shuffle, 'num_workers': 1,
+		## changing num_workers to 0 on 2022-10-31;
+		dataloader_kw = {'batch_size': b_size, 'shuffle': shuffle, 'num_workers': 0,
 			'collate_fn': collate_fn, 'sampler': None}
 		dldr_trn = torch.utils.data.DataLoader(dset_trn, **dataloader_kw)
 		weights = torch.FloatTensor(weights).cuda(self.device)

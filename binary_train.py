@@ -23,16 +23,18 @@ def main():
 	args = {k: v for k, v in args.items() if v is not None}
 	task_csv_txt = args.get('task_csv_txt', 'task_csvs.txt')
 	task_id = args.get('task_id', 0)
+	arg_ext = args.get('arg_ext', '')
 	audio_idx = int(args.get('audio_idx', 0))
 	device = int(args.get('device', 0))
 	n_epoch = int(args.get('n_epoch', 1))
 	num_seeds = int(args.get('num_seeds', 1))
 	num_folds = int(args.get('num_folds', 5))
+	holdout_test = args.get('holdout_test')
 	do_rand_seg = args.get('do_rand_seg')
 	num_pt_segments = int(args.get('num_pt_segments', 10))
 	pt_segment_root = args.get('pt_segment_root')
 	seg_min = int(args.get('seg_min', 5))
-	learning_rate = float(args.get('learning_rate', 1e-3))
+	learning_rate = float(args.get('learning_rate', 1e-4))
 	negative_loss_weight = float(args.get('negative_loss_weight', 1))
 	positive_loss_weight = float(args.get('positive_loss_weight', 1))
 	weights = [negative_loss_weight, positive_loss_weight]
@@ -54,10 +56,13 @@ def main():
 	audio_idx = 'osm_npy' if audio_idx == 0 else 'mfcc_npy'
 	ext += f'_{audio_idx}'
 
+	if holdout_test:
+		ext += '_holdout_test'
+
 	task_id = int(task_id)
 	if task_id in [0, 1]:
 		get_label = lambda d: int(d['is_de_and_ad'])
-	elif task_id in [2, 3]:
+	elif task_id in [2, 3, 4, 5]:
 		get_label = lambda d: int(d['is_demented'])
 	else:
 		raise AssertionError(f'no get label for task id {task_id}')
@@ -65,15 +70,22 @@ def main():
 	loss_fn = torch.nn.CrossEntropyLoss
 	ext += f'_{str(negative_loss_weight)}_{str(positive_loss_weight)}'
 
+	ext += f'{arg_ext}'
+
 	seed_to_dir = gen_seed_dirs(num_seeds, ext, n_epoch)
 	all_npy = load_all_data(csv_info, audio_idx)
 	get_fea = lambda fp, **kw: kw['all_npy'][fp]
+	visited_outer_folds = []
 	for seed, dir_rsl in seed_to_dir.items():
 		trn_dir, vld_dir = tf.gen_dirs(dir_rsl)
 		for vld_idx in range(num_folds):
 			for tst_idx in range(num_folds):
+				tst_idx = None if holdout_test else tst_idx
+				if tst_idx is None and vld_idx in visited_outer_folds:
+					continue
 				if vld_idx == tst_idx:
 					continue ## vld and tst fold can't be the same?
+				visited_outer_folds.append(vld_idx)
 				dset_kw = tf.set_dset_kw(num_folds, vld_idx, tst_idx, seed, do_rand_seg,
 					num_pt_segments, pt_segment_root, seg_min, audio_idx, get_label)
 				dset_kw.update({'get_fea': get_fea, 'get_fea_kw': {'all_npy': all_npy}})

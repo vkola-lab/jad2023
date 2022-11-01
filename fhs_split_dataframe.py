@@ -15,6 +15,20 @@ def get_fhs_ids(df_pts):
 	ids = df_pts.id.values.ravel('K')
 	return np.unique([f'{idtypes[i]}-{str(ids[i]).zfill(4)}' for i, _ in enumerate(idtypes)])
 
+def has_transcript(df_raw):
+	"""
+	pts that have at least one tscript
+	"""
+	return df_raw.loc[df_raw["pt_has_tscript"] == "1"]
+
+def get_static_and_remaining_ids(df_raw, get_static, get_pt_ids):
+	"""
+	get rows for those that are in the static fold and the remaining IDs
+	"""
+	all_ids = get_pt_ids(df_raw)
+	static_ids = get_pt_ids(get_static(df_raw))
+	return static_ids, np.array([i for i in all_ids if i not in static_ids])
+
 def create_folds(sample_ids, num_folds, seed):
 	"""
 	take datasamples, split them into a number of folds (num_folds), set random seed;
@@ -42,6 +56,19 @@ def get_fold(sample_ids, folds, vld_idx, tst_idx, mode):
 		all_fold_indices = all_fold_indices[all_fold_indices != vld_idx]
 		all_fold_indices = all_fold_indices[all_fold_indices != tst_idx]
 		## keep all fold indices except for the TRN and VLD indices;
+		idx = np.concatenate([folds[all_fold_indices[i]] for i in range(len(all_fold_indices))])
+	return sample_ids[idx]
+
+def get_holdout_fold(sample_ids, folds, vld_idx, mode):
+	"""
+	get fold if holdout_test is True
+	"""
+	assert mode in {'TRN', 'VLD'}, f"{mode} is not TRN OR VLD"
+	if mode == 'VLD':
+		idx = folds[vld_idx]
+	else:
+		all_fold_indices = np.arange(len(folds))
+		all_fold_indices = all_fold_indices[all_fold_indices != vld_idx]
 		idx = np.concatenate([folds[all_fold_indices[i]] for i in range(len(all_fold_indices))])
 	return sample_ids[idx]
 

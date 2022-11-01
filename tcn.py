@@ -9,71 +9,80 @@ import torch.nn as nn
 
 class TCN(nn.Module):
 	"""
-	TCN class;
+	TCN class - 2022-10-31
 	"""
 	def __init__(self, device, **kwargs):
 		"""
-		init method;
+		constructor
 		"""
 		super(TCN, self).__init__()
 		self.ys_len = kwargs.get('ys_len')
 		channels = kwargs.get('channels')
 		self.device = device     # 'cpu' or 'cuda:x'
 		self.tcn = nn.Sequential(
-			nn.BatchNorm1d(channels),
+			# nn.BatchNorm1d(13),
 			nn.Conv1d(in_channels=channels, out_channels=32, kernel_size=1, stride=1, padding=0),
-			nn.BatchNorm1d(32),
+
+			# nn.BatchNorm1d(32),
 			nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3, stride=1, padding=1),
 			nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3, stride=1, padding=1),
 			nn.ELU(),
 			nn.MaxPool1d(kernel_size=4, stride=4, padding=0),
 			# nn.Dropout(),
-			nn.BatchNorm1d(32),
+
+			# nn.BatchNorm1d(32),
 			nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1),
 			nn.Conv1d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1),
 			nn.ELU(),
 			nn.MaxPool1d(kernel_size=4, stride=4, padding=0),
 			# nn.Dropout(),
-			nn.BatchNorm1d(64),
+
+			# nn.BatchNorm1d(64),
 			nn.Conv1d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
 			nn.Conv1d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1),
 			nn.ELU(),
 			nn.MaxPool1d(kernel_size=4, stride=4, padding=0),
-			nn.BatchNorm1d(128),
+
+			# nn.BatchNorm1d(128),
 			nn.Conv1d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1),
 			nn.Conv1d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1),
 			nn.ELU(),
 			nn.MaxPool1d(kernel_size=4, stride=4, padding=0),
-			nn.BatchNorm1d(128),
+
+			# nn.BatchNorm1d(128),
 			nn.Conv1d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1),
 			nn.Conv1d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1),
 			nn.ELU(),
 			nn.MaxPool1d(kernel_size=4, stride=4, padding=0),
-			nn.BatchNorm1d(256),
+
+			# nn.BatchNorm1d(256),
 			nn.Conv1d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1),
 			nn.Conv1d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1),
 			nn.ELU(),
 			nn.MaxPool1d(kernel_size=4, stride=4, padding=0),
-			nn.BatchNorm1d(256),
+
+			# nn.BatchNorm1d(256),
 			nn.Conv1d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1),
 			nn.Conv1d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1),
 			nn.ELU(),
 			nn.MaxPool1d(kernel_size=4, stride=4, padding=0),
-			nn.BatchNorm1d(512),
+
+			# nn.BatchNorm1d(512),
 			nn.Conv1d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1),
 			nn.Conv1d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1),
 			nn.ELU(),
 		)
 		# linear layer
 		self.mlp = nn.Sequential(
-			nn.Linear(512, self.ys_len, bias=True)
+			nn.Linear(512, self.ys_len, bias=False)
 		)
+
 		self.tcn.to(device)
 		self.mlp.to(device)
 
 	def forward(self, Xs):
 		"""
-		pass fwd;
+		fwd
 		"""
 		out = []
 		for X in Xs:
@@ -89,7 +98,7 @@ class TCN(nn.Module):
 
 	def forward_wo_gpool(self, Xs):
 		"""
-		fwd without gpool;
+		fwd without gpool
 		"""
 		out = []
 		for X in Xs:
@@ -126,3 +135,11 @@ class TCN(nn.Module):
 				device=self.device)
 			Xs[idx] = Xs[idx].permute(1, 0)
 			Xs[idx] = Xs[idx].view(1, Xs[idx].shape[0], Xs[idx].shape[1])
+
+if __name__ == '__main__':
+	i = [torch.rand(1, 13, 160000).to(0),
+		 torch.rand(1, 13, 40000).to(0)]
+	m = TCN(0, channels=13, ys_len=2)
+	o = m(i)
+	print(o)
+	print(o.shape)

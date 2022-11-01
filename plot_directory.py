@@ -76,16 +76,10 @@ def main():
 	"""
 	parent_dir = sys.argv[1]
 	parent_dir_ext = os.path.normpath(parent_dir).split(os.sep)[-2]
-	## strip trailing slashes and then grab second to last folder name;
 	seed_list = get_dir_list(parent_dir)
 	print(seed_list)
-	## list of all seeds
-#	inner_dirs = []
-	## get all the dir_rsls
 	string_list = []
 	only_print = False
-	# for seed_dir in seed_list:
-	# 	inner_dirs.extend(get_dir_list(seed_dir))
 	for _, dir_rsl in enumerate(seed_list):
 		current_string_list = [dir_rsl + "\n"]
 		mode = 'chunk'
@@ -108,15 +102,12 @@ def main():
 		mtr_all = defaultdict(list)
 		print(dir_rsl)
 		print(len(lst_csv))
-		if lst_csv == [] or len(lst_csv) != 20:
+		if lst_csv == [] or len(lst_csv) not in [5, 20]:
 			continue
 		print(f"{len(lst_csv)} csvs found;")
 		fn_metrics = {}
 		for fn in lst_csv:
 			fn_base = os.path.basename(fn)
-			# if not fn_base.startswith('audio'):
-			# 	continue
-			# read from csv
 			df = pd.read_csv(fn)
 			# get scores and labels
 			if mode == 'chunk':
@@ -128,12 +119,6 @@ def main():
 				scr = tmp[:,-1]
 			else:
 				raise AssertionError(f'invalid mode: {mode}')
-			# print(fn)
-			# print(len(scr))
-			# print(np.count_nonzero(np.isnan(scr)))
-			# print(len(lbl))
-			# print(np.count_nonzero(np.isnan(lbl)))
-			# input()
 			mtr = calc_performance_metrics(scr, lbl)
 			for k, mtr_val in mtr.items():
 				if k == 'mat':

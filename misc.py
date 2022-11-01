@@ -104,12 +104,6 @@ def get_roc_info(lst_lbl, lst_scr):
 	calculate ROC information;
 	"""
 	fpr_pt = np.linspace(0, 1, 1001)
-	print(lst_lbl)
-	print(len(lst_lbl))
-	input()
-	print(lst_scr)
-	print(len(lst_scr))
-	input()
 	tprs, aucs = [], []
 	for lbl, scr in zip(lst_lbl, lst_scr):
 		fpr, tpr, _ = roc_curve(y_true=lbl, y_score=scr, drop_intermediate=True)
@@ -120,9 +114,6 @@ def get_roc_info(lst_lbl, lst_scr):
 	tprs_std = np.std(tprs, axis=0)
 	tprs_upper = np.minimum(tprs_mean + tprs_std, 1)
 	tprs_lower = np.maximum(tprs_mean - tprs_std, 0)
-	print(fpr_pt)
-	print(tprs_mean)
-	print(tprs)
 
 	auc_mean = auc(fpr_pt, tprs_mean)
 	auc_std = np.std(aucs)

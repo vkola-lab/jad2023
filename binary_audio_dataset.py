@@ -37,10 +37,19 @@ class BinaryAudioDataset(Dataset):
 		assert mode in ['TRN', 'VLD', 'TST'], mode
 		self.mode = mode
 		df_raw = pd.read_csv(csv_info, dtype=object)
-		pt_ids = get_pt_ids(df_raw, **get_pt_ids_kw)
-		## get all participant IDs;
-		folds = sdf.create_folds(pt_ids, num_folds, seed)
-		current_fold_ids = set(sdf.get_fold(pt_ids, folds, vld_idx, tst_idx, mode))
+		if tst_idx is not None:
+			pt_ids = get_pt_ids(df_raw, **get_pt_ids_kw)
+			## get all participant IDs;
+			folds = sdf.create_folds(pt_ids, num_folds, seed)
+			current_fold_ids = set(sdf.get_fold(pt_ids, folds, vld_idx, tst_idx, mode))
+		else:
+			static_ids, other_ids = sdf.get_static_and_remaining_ids(df_raw, sdf.has_transcript,
+				get_pt_ids)
+			if mode == 'TST':
+				current_fold_ids = static_ids
+			else:
+				folds = sdf.create_folds(other_ids, num_folds, seed)
+				current_fold_ids = set(sdf.get_holdout_fold(other_ids, folds, vld_idx, mode))
 		data_list = []
 		for _, row in df_raw.iterrows():
 			pid = get_pid(row, **get_pid_kw)
