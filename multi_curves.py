@@ -99,7 +99,7 @@ def main():
     """
     cnn_dir_rsl = sys.argv[1]
     lstm_dir_rsl = sys.argv[2]
-    first_ext, second_ext = 'CNN', 'LSTM'
+    first_ext, second_ext = 'MFCC', 'OSM'
     tiff_dir = os.path.join('tiff', get_date())
     if len(sys.argv) > 3:
         print(sys.argv)
@@ -112,6 +112,7 @@ def main():
     pr_dict = {}
     for idx, dir_rsl in enumerate([cnn_dir_rsl, lstm_dir_rsl]):
         mode = 'audio_avg'
+        audio_idx = 'mfcc_npy' if idx == 0 else 'osm_npy'
         # list of all csv files
         num_csvs = None
         if num_csvs is None:
@@ -135,7 +136,7 @@ def main():
         fn_metrics = {}
         for fn in lst_csv:
             fn_base = os.path.basename(fn)
-            if not fn_base.startswith('audio'):
+            if not fn_base.startswith('tst_audio'):
                 continue
             # read from csv
             df = pd.read_csv(fn)
@@ -144,7 +145,7 @@ def main():
                 lbl = df.label.to_numpy()
                 scr = df.score.to_numpy()
             elif mode == 'audio_avg':
-                tmp = df.groupby('audio_fn').mean().to_numpy()
+                tmp = df.groupby(audio_idx).mean().to_numpy()
                 lbl = tmp[:,0].astype(np.int)
                 scr = tmp[:,-1]
             mtr = calc_performance_metrics(scr, lbl)
@@ -166,7 +167,8 @@ def main():
         roc_dict[idx] = curr_hmp_roc
         pr_dict[idx] = curr_hmp_pr
     legend_dict = {0: ('magenta', first_ext), 1: ('green', second_ext)}
-    lstm_ext = lstm_dir_rsl.replace(' ', '_').replace(':', '')
+    # lstm_ext = lstm_dir_rsl.replace(' ', '_').replace(':', '')
+    lstm_ext = lstm_dir_rsl.split(os.sep)[-3]
     fig_name = f'{tiff_dir}/combined_roc_from_{os.path.basename(lstm_ext)}.tiff'
     plot_curves(roc_dict, legend_dict, 'roc', fig_name)
     fig_name = f'{tiff_dir}/combined_pr_from_{os.path.basename(lstm_ext)}.tiff'

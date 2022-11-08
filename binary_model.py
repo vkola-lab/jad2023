@@ -126,9 +126,10 @@ class BinaryModel:
 		if debug_stop:
 			return []
 		self.nn.eval()
+		## changing num_workers to 0 on 2022-11-01;
 		dl_dr_kwargs = {'batch_size': b_size,
 				  'shuffle': False,
-				  'num_workers': 1,
+				  'num_workers': 0,
 				  'collate_fn': eval_collate_fn}
 		dldr = torch.utils.data.DataLoader(dset, **dl_dr_kwargs)
 		# list to store result (i.e. all outputs)
@@ -145,6 +146,8 @@ class BinaryModel:
 					results = out.data.cpu().numpy()
 					all_results.append(results)
 					for idx, x_fp in enumerate(x_filepaths):
+						if len(x_fp) == 2:
+							x_fp = tuple(x_fp)
 						start_end = start_end_list[idx]
 						assert start_end not in x_fp_to_rsl[x_fp], f'{x_fp}, {start_end}'
 						x_fp_to_rsl[x_fp][start_end] = results[idx]

@@ -11,7 +11,7 @@ import train_func as tf
 from binary_audio_dataset import BinaryAudioDataset
 from binary_model import BinaryModel
 from handle_input import get_args
-from load_all_data import load_all_data
+from load_all_data import load_all_data, load_all_osm_and_mfcc
 from misc import gen_seed_dirs
 from read_txt import select_task
 
@@ -52,9 +52,14 @@ def main():
 
 	csv_info, ext = select_task(task_id, task_csv_txt)
 
-	channels = 5 if audio_idx == 0 else 13
-	audio_idx = 'osm_npy' if audio_idx == 0 else 'mfcc_npy'
-	ext += f'_{audio_idx}'
+	if audio_idx in [0, 1]:
+		channels = 5 if audio_idx == 0 else 13
+		audio_idx = 'osm_npy' if audio_idx == 0 else 'mfcc_npy'
+		ext += f'_{audio_idx}'
+	elif audio_idx == 2:
+		channels = 18
+		audio_idx = 'osm_and_mfcc_npy'
+		ext += f'_{audio_idx}'
 
 	if holdout_test:
 		ext += '_holdout_test'
@@ -64,6 +69,8 @@ def main():
 		get_label = lambda d: int(d['is_de_and_ad'])
 	elif task_id in [2, 3, 4, 5]:
 		get_label = lambda d: int(d['is_demented'])
+	elif task_id in [6]:
+		get_label = lambda d: int(d['is_nde'])
 	else:
 		raise AssertionError(f'no get label for task id {task_id}')
 	audio_dset = BinaryAudioDataset
@@ -73,7 +80,10 @@ def main():
 	ext += f'{arg_ext}'
 
 	seed_to_dir = gen_seed_dirs(num_seeds, ext, n_epoch)
-	all_npy = load_all_data(csv_info, audio_idx)
+	if audio_idx == 'osm_and_mfcc_npy':
+		all_npy = load_all_osm_and_mfcc(csv_info)
+	else:
+		all_npy = load_all_data(csv_info, audio_idx)
 	get_fea = lambda fp, **kw: kw['all_npy'][fp]
 	visited_outer_folds = []
 	for seed, dir_rsl in seed_to_dir.items():

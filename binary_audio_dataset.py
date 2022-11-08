@@ -56,7 +56,11 @@ class BinaryAudioDataset(Dataset):
 			if pid not in current_fold_ids:
 				continue
 			label = self.get_label(row)
-			row_data = [pid, row[self.audio_idx], label, None, None]
+			if self.audio_idx == 'osm_and_mfcc_npy':
+				filepath = (row['osm_npy'], row['mfcc_npy'])
+			else:
+				filepath = row[self.audio_idx]
+			row_data = [pid, filepath, label, None, None]
 			data_list.append(row_data)
 
 		self.df_dat = pd.DataFrame(data_list, columns=data_headers)
