@@ -18,6 +18,19 @@ def get_dir_rsl(ext, num_epochs, seed):
 	"""
 	return f'results/{ext}/{num_epochs}_epochs/{seed}'
 
+def pregen_seed_dirs(seed_list, ext, n_epoch):
+	"""
+	when targeting specific seed(s)
+	"""
+	seed_to_dir = {}
+	for seed in seed_list:
+		dir_rsl = get_dir_rsl(ext, n_epoch, seed)
+		assert not os.path.isdir(dir_rsl), dir_rsl
+		os.makedirs(dir_rsl)
+		print(dir_rsl)
+		seed_to_dir[seed] = dir_rsl
+	return seed_to_dir
+
 def gen_seed_dirs(num_seeds, ext, n_epoch):
 	"""
 	generate seed directories;

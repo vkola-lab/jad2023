@@ -11,8 +11,8 @@ import train_func as tf
 from binary_audio_dataset import BinaryAudioDataset
 from binary_model import BinaryModel
 from handle_input import get_args
-from load_all_data import load_all_data, load_all_osm_and_mfcc
-from misc import gen_seed_dirs
+from load_all_data import load_all_data, preload_mfcc_load_osm, get_mfcc_osm, load_all_osm_and_mfcc
+from misc import gen_seed_dirs, pregen_seed_dirs
 from read_txt import select_task
 
 def main():
@@ -28,6 +28,7 @@ def main():
 	device = int(args.get('device', 0))
 	n_epoch = int(args.get('n_epoch', 1))
 	num_seeds = int(args.get('num_seeds', 1))
+	seed_list = args.get('seed_list', [])
 	num_folds = int(args.get('num_folds', 5))
 	holdout_test = args.get('holdout_test')
 	do_rand_seg = args.get('do_rand_seg')
@@ -78,13 +79,19 @@ def main():
 	ext += f'_{str(negative_loss_weight)}_{str(positive_loss_weight)}'
 
 	ext += f'{arg_ext}'
+	if seed_list != []:
+		seed_to_dir = pregen_seed_dirs(seed_list, ext, n_epoch)
+	else:
+		seed_to_dir = gen_seed_dirs(num_seeds, ext, n_epoch)
 
-	seed_to_dir = gen_seed_dirs(num_seeds, ext, n_epoch)
 	if audio_idx == 'osm_and_mfcc_npy':
+		# all_npy = preload_mfcc_load_osm(csv_info)
+		# get_fea = get_mfcc_osm
 		all_npy = load_all_osm_and_mfcc(csv_info)
+		get_fea = lambda fp, **kw: kw['all_npy'][fp]
 	else:
 		all_npy = load_all_data(csv_info, audio_idx)
-	get_fea = lambda fp, **kw: kw['all_npy'][fp]
+		get_fea = lambda fp, **kw: kw['all_npy'][fp]
 	visited_outer_folds = []
 	for seed, dir_rsl in seed_to_dir.items():
 		trn_dir, vld_dir = tf.gen_dirs(dir_rsl)

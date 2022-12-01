@@ -26,6 +26,7 @@ def get_args(args):
 	parser.add_argument("-d", "--device", help='gpu device index;')
 	parser.add_argument('-ne', '--n_epoch', help='indicates number of epochs;')
 	parser.add_argument('-ns', '--num_seeds', help='indicates number of seeds to use;')
+	parser.add_argument('-sl', '--seed_list', help='list of seeds to target')
 	parser.add_argument("-nf", "--num_folds", help='number of cross validation folds;')
 	parser.add_argument('-ht', '--holdout_test', action='store_true',
 		help='if set, test fold is held static;')

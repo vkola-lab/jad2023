@@ -61,6 +61,40 @@ def load_all_osm_and_mfcc(csv_in):
 	print(f'loaded {len(fp_dict)} items in {end - start};')
 	return fp_dict
 
+def preload_mfcc_load_osm(csv_in):
+	"""
+		preloading mfcc, live loading OSM
+		not enough memory to hold mfcc + OSM
+	"""
+	final = {}
+	for _, row in pd.read_csv(csv_in, dtype=object).iterrows():
+		osm_fp = row['osm_npy']
+		mfcc_fp = row['mfcc_npy']
+		id_date = row['key']
+		final[id_date] = (osm_fp, mfcc_fp)
+	start = datetime.now()
+	print(f'starting to load all data {start};')
+	fp_dict = {}
+	for _, fp_tuple in tqdm(final.items()):
+		osm_fp, mfcc_fp = fp_tuple
+		mfcc = load_npy(mfcc_fp)
+		assert fp_tuple not in fp_dict, fp_tuple
+		fp_dict[fp_tuple] = mfcc
+	end = datetime.now()
+	print(f'loaded {len(fp_dict)} items in {end - start};')
+	return fp_dict
+
+def get_mfcc_osm(fp_tuple, **kwargs):
+	"""
+	preload mfcc, load osm;
+	"""
+	all_npy = kwargs['all_npy']
+	osm_fp, _ = fp_tuple
+	osm_arr = np.load(osm_fp)
+	mfcc_arr = all_npy[fp_tuple]
+	final_arr = combine_arrays(osm_arr, mfcc_arr)
+	return final_arr
+
 def load_all_data(csv_in, audio_idx):
 	"""
 	loading all data;
