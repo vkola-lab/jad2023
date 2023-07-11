@@ -66,7 +66,7 @@ def plot_individual_curve(hmp_roc, legend_dict, curve_str, fig_name):
 			  bbox_to_anchor=(0.04, 0.04, 0.5, 0.5),
 			  loc='lower left')
 
-	fig.savefig(fig_name, dpi=200)
+	fig.savefig(fig_name, dpi=300, format='svg')
 	plt.close('all')
 	# print(fig_name)
 
@@ -107,7 +107,6 @@ def main():
 		print(f"{len(lst_csv)} csvs found;")
 		fn_metrics = {}
 		for fn in lst_csv:
-			fn_base = os.path.basename(fn)
 			df = pd.read_csv(fn)
 			# get scores and labels
 			if mode == 'chunk':
@@ -143,10 +142,10 @@ def main():
 		except (TypeError, ValueError) as error:
 			print(error)
 			continue
-		legend_dict = {0: ('magenta', 'CNN')}
-		fig_name = f'{dir_rsl}/individual_roc.png'
+		legend_dict = {0: ('magenta', 'Fusion')}
+		fig_name = f'{dir_rsl}/individual_roc.svg'
 		plot_individual_curve(curr_hmp_roc, legend_dict, 'roc', fig_name)
-		fig_name = f'{dir_rsl}/individual_pr.png'
+		fig_name = f'{dir_rsl}/individual_pr.svg'
 		plot_individual_curve(curr_hmp_pr, legend_dict, 'pr', fig_name)
 		string_list.extend(current_string_list)
 	now = str(datetime.now()).replace(' ', '_').replace(':', '_')

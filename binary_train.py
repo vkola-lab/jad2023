@@ -68,7 +68,7 @@ def main():
 	task_id = int(task_id)
 	if task_id in [0, 1]:
 		get_label = lambda d: int(d['is_de_and_ad'])
-	elif task_id in [2, 3, 4, 5]:
+	elif task_id in [2, 3, 4, 5, 7]:
 		get_label = lambda d: int(d['is_demented'])
 	elif task_id in [6]:
 		get_label = lambda d: int(d['is_nde'])

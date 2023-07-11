@@ -1,4 +1,5 @@
 *csv
+*json
 *txt
 .DS_Store
 *__
@@ -16,5 +17,9 @@
 *test.py
 *xml
 *csv_in/
+*json_in/
 *sh
 *tiff/
+*svg
+*svg/
+*png

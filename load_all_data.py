@@ -34,6 +34,59 @@ def load_npy(filepath):
 		return np_arr[0]
 	return np_arr
 
+def cutoff_array(final_arr, cutoff, win_len=10):
+	"""
+	final_arr has some shape;
+	each item in final_arr represents 10 milliseconds;
+	we only want the first cutoff (minutes) of final_arr;
+	"""
+	windows_per_minute = 60 * 1000 / win_len
+	## 60 seconds per min * 1000 milliseconds per second / 10 milliseconds per window
+	## equals windows per minute
+	up_to = int(windows_per_minute * cutoff)
+	assert up_to <= len(final_arr), final_arr.shape
+	return final_arr[:up_to]
+
+def shap_load_osm_mfcc(tst_fps_data, cutoff):
+	"""
+	loading all data - combining osm + mfcc;
+	loading from tst_fps_data instead (shap analysis)
+	"""
+	start = datetime.now()
+	print(f'starting to load all data {start};')
+	fp_dict = {}
+	full_array = None
+	idx = 0
+	for id_date, data in tqdm(tst_fps_data.items()):
+		if data['duration'] < cutoff:
+			continue
+		fp_tuple = data['osm_fp'], data['mfcc_fp']
+		osm_fp, mfcc_fp = fp_tuple
+		osm = load_npy(osm_fp)
+		mfcc = load_npy(mfcc_fp)
+		print(f'osm_shape: {osm.shape}')
+		print(f'mfcc_shape: {mfcc.shape}')
+		final_arr = combine_arrays(osm, mfcc)
+		final_arr = cutoff_array(final_arr, cutoff)
+		final_arr = np.expand_dims(final_arr, axis=0)
+		## shape = (1, up_to, 18)
+		if full_array is None:
+			full_array = final_arr
+		else:
+			full_array = np.concatenate((full_array, final_arr))
+		print(f'\tfinal_arr_shape: {final_arr.shape}')
+		print(f'\tfull_array_shape: {full_array.shape}')
+		print(f'\t{idx}')
+		assert fp_tuple not in fp_dict, fp_tuple
+		fp_dict[fp_tuple] = {'idx': idx,
+			'duration': data['duration'],
+			'pt_has_tscript': data['pt_has_tscript'],
+			'id_date': id_date}
+		idx += 1
+	end = datetime.now()
+	print(f'loaded {len(fp_dict)} items in {end - start};')
+	return fp_dict, full_array
+
 def load_all_osm_and_mfcc(csv_in):
 	"""
 	loading all data - combining osm + mfcc;
@@ -51,10 +104,7 @@ def load_all_osm_and_mfcc(csv_in):
 		osm_fp, mfcc_fp = fp_tuple
 		osm = load_npy(osm_fp)
 		mfcc = load_npy(mfcc_fp)
-		print(f'osm_shape: {osm.shape}')
-		print(f'mfcc_shape: {mfcc.shape}')
 		final_arr = combine_arrays(osm, mfcc)
-		print(f'\tfinal_arr_shape: {final_arr.shape}')
 		assert fp_tuple not in fp_dict, fp_tuple
 		fp_dict[fp_tuple] = final_arr
 	end = datetime.now()
