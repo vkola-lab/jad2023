@@ -43,13 +43,18 @@ def main():
 	no_save_model = args.get('no_save_model')
 	no_write_fold_txt = args.get('no_write_fold_txt')
 
+	add_feats = int(args.get('add_feats', 0))
+	feats_to_indices = {0: [], 1: ['age'], 2: ['age', 'encoded_sex'],
+		3: ['encoded_sex']}
+	feat_indices = feats_to_indices.get(add_feats)
 	final_args = {'task_id': task_id,
 		'device': device, 'n_epoch': n_epoch,
 		'num_seeds': num_seeds, 'num_folds': num_folds,
 		'do_rand_seg': do_rand_seg, 'num_pt_segments': num_pt_segments,
 		'pt_segment_root': pt_segment_root, 'seg_min': seg_min,
 		'learning_rate': learning_rate, 'weights': weights,
-		'no_save_model': no_save_model}
+		'no_save_model': no_save_model, 'add_feats': add_feats,
+		'feat_indices': feat_indices}
 
 	csv_info, ext = select_task(task_id, task_csv_txt)
 
@@ -68,10 +73,11 @@ def main():
 	task_id = int(task_id)
 	if task_id in [0, 1]:
 		get_label = lambda d: int(d['is_de_and_ad'])
-	elif task_id in [2, 3, 4, 5, 7]:
+	elif task_id in [2, 3, 4, 5, 7, 8, 9, 10, 6, 11]:
 		get_label = lambda d: int(d['is_demented'])
-	elif task_id in [6]:
-		get_label = lambda d: int(d['is_nde'])
+	# elif task_id in [6, 11]:
+	# 	get_label = lambda d: int(d['is_nde'])
+	## 2023-07-17 - making NDE tasks positive for DE to be consistent
 	else:
 		raise AssertionError(f'no get label for task id {task_id}')
 	audio_dset = BinaryAudioDataset
@@ -105,10 +111,11 @@ def main():
 				visited_outer_folds.append(vld_idx)
 				dset_kw = tf.set_dset_kw(num_folds, vld_idx, tst_idx, seed, do_rand_seg,
 					num_pt_segments, pt_segment_root, seg_min, audio_idx, get_label)
-				dset_kw.update({'get_fea': get_fea, 'get_fea_kw': {'all_npy': all_npy}})
+				dset_kw.update({'get_fea': get_fea, 'get_fea_kw': {'all_npy': all_npy},
+					'feat_indices': feat_indices})
 				dset_trn, dset_vld, dset_tst = tf.gen_audio_datasets(csv_info, dset_kw, audio_dset)
-				ys_len = 2 ## ?
-				model_obj = tf.get_model(BinaryModel, ys_len, channels, device)
+				ys_len = 2 ## - tied to number of output classes?
+				model_obj = tf.get_model(BinaryModel, ys_len, channels, device, feat_indices)
 				model_obj = tf.fit_model(n_epoch, learning_rate, weights, debug_stop,
 					dset_trn, dset_vld, dir_rsl, loss_fn, model_obj)
 

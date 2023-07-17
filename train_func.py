@@ -47,12 +47,13 @@ def gen_audio_datasets(csv_info, dset_kw, audio_dset):
 	dset_tst = audio_dset(csv_info, 'TST', **dset_kw)
 	return dset_trn, dset_vld, dset_tst
 
-def get_model(model, ys_len, channels, device):
+def get_model(model, ys_len, channels, device, feat_indices):
 	"""
 	get model
 	"""
-	model_obj = model(10, nn=TCN(device, **{'ys_len': ys_len, 'channels': channels}),
-		device=device)
+	tcn_kw = {'ys_len': ys_len, 'channels': channels, 'feat_indices': feat_indices}
+	neural = TCN(device, **tcn_kw)
+	model_obj = model(10, neural, device=device)
 	return model_obj
 
 def fit_model(n_epoch, learning_rate, weights, debug_stop, dset_trn, dset_vld, dir_rsl,

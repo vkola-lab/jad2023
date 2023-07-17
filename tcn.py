@@ -18,6 +18,8 @@ class TCN(nn.Module):
 		super(TCN, self).__init__()
 		self.ys_len = kwargs.get('ys_len')
 		channels = kwargs.get('channels')
+		feat_indices = kwargs.get('feat_indices', [])
+		## number of demographic features to add to MLP
 		self.device = device     # 'cpu' or 'cuda:x'
 		self.tcn = nn.Sequential(
 			# nn.BatchNorm1d(13),
@@ -74,22 +76,33 @@ class TCN(nn.Module):
 		)
 		# linear layer
 		self.mlp = nn.Sequential(
-			nn.Linear(512, self.ys_len, bias=False)
+			nn.Linear(512 + len(feat_indices), self.ys_len, bias=False)
 		)
-
+		## expects input of (n, 512) and returns (n, self.ys_len) shape
+		## where n is the batch size;
 		self.tcn.to(device)
 		self.mlp.to(device)
 
-	def forward(self, Xs):
+	def forward(self, Xs, additional_feats):
 		"""
 		fwd
 		"""
 		out = []
-		for X in Xs:
+		additional_feats = [] if additional_feats is None else additional_feats
+		## len of Xs is equal to number of items in batch
+		for idx, X in enumerate(Xs):
+			## each X is (1, num_channels, length_of_feature)
+			## e.g., (1, 18, 463628)
 			tmp = self.tcn(X)
+			## after going thru TCN, condenses to (1, 512, 28)
 			# global average pooling
 			tmp = torch.mean(tmp, dim=2)
-			# linear layer
+			# linear layer ## tmp: [1, 512]
+			for feat_list in additional_feats:
+				feat_val = int(feat_list[idx])
+				feat_tensor = torch.tensor([[feat_val]], dtype=torch.float32,
+					device=self.device)
+				tmp = torch.cat((tmp, feat_tensor), 1)
 			tmp = self.mlp(tmp)
 			tmp = tmp.squeeze()
 			out.append(tmp)
@@ -112,14 +125,14 @@ class TCN(nn.Module):
 		"""
 		return self(Xs)
 
-	def get_scores_loss(self, Xs, ys, loss_fn, target=None):
+	def get_scores_loss(self, Xs, ys, loss_fn, target=None,
+		additional_feats=None):
 		"""
 		get scores and loss;
 		"""
-		scores = self(Xs)
+		scores = self.forward(Xs, additional_feats)
 		if len(scores.shape) == 1:
 			scores = torch.unsqueeze(scores, 1)
-		# Xs = np.array(Xs)
 		if target is None:
 			loss = loss_fn(scores, ys)
 		else:

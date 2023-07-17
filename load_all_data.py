@@ -100,7 +100,7 @@ def load_all_osm_and_mfcc(csv_in):
 	start = datetime.now()
 	print(f'starting to load all data {start};')
 	fp_dict = {}
-	for _, fp_tuple in tqdm(final.items()):
+	for _, fp_tuple in tqdm(final.items(), miniters=len(final)/100):
 		osm_fp, mfcc_fp = fp_tuple
 		osm = load_npy(osm_fp)
 		mfcc = load_npy(mfcc_fp)

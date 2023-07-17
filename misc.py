@@ -24,6 +24,7 @@ def pregen_seed_dirs(seed_list, ext, n_epoch):
 	"""
 	seed_to_dir = {}
 	for seed in seed_list:
+		seed = int(seed)
 		dir_rsl = get_dir_rsl(ext, n_epoch, seed)
 		assert not os.path.isdir(dir_rsl), dir_rsl
 		os.makedirs(dir_rsl)

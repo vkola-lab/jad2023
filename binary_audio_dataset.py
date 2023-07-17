@@ -34,13 +34,14 @@ class BinaryAudioDataset(Dataset):
 		self.get_fea_kw = kwargs.get('get_fea_kw', {})
 		data_headers = kwargs.get('data_headers', ['patient_id', self.audio_idx, 'label',
 			'start', 'end'])
-
+		self.feat_indices = kwargs.get('feat_indices', [])
+		for feat_idx in self.feat_indices:
+			data_headers.append(feat_idx)
 		assert mode in ['TRN', 'VLD', 'TST'], mode
 		self.mode = mode
 		df_raw = pd.read_csv(csv_info, dtype=object)
 		if tst_idx is not None:
 			pt_ids = get_pt_ids(df_raw, **get_pt_ids_kw)
-			## get all participant IDs;
 			folds = sdf.create_folds(pt_ids, num_folds, seed)
 			current_fold_ids = set(sdf.get_fold(pt_ids, folds, vld_idx, tst_idx, mode))
 		else:
@@ -62,6 +63,7 @@ class BinaryAudioDataset(Dataset):
 			else:
 				filepath = row[self.audio_idx]
 			row_data = [pid, filepath, label, None, None]
+			row_data.extend([row[i] for i in self.feat_indices])
 			data_list.append(row_data)
 
 		self.df_dat = pd.DataFrame(data_list, columns=data_headers)
@@ -83,7 +85,6 @@ class BinaryAudioDataset(Dataset):
 		"""
 		get item;
 		"""
-		# audio_fp = self.df_dat.loc[idx, self.audio_idx]
 		audio_fp = self.get_audio_fp(self.df_dat, idx, self.audio_idx)
 		fea = self.get_fea(audio_fp, **self.get_fea_kw)
 		start = self.df_dat.loc[idx, 'start']
@@ -94,15 +95,27 @@ class BinaryAudioDataset(Dataset):
 			end = int(end)
 			fea = fea[start:end]
 		label = self.df_dat.loc[idx, 'label']
-		return fea, label, audio_fp, start, end
+		to_collate = [fea, label, audio_fp, start, end]
+		for feat_idx in self.feat_indices:
+			to_collate.append(self.df_dat.loc[idx, feat_idx])
+		return to_collate
 
 
 def collate_fn(batch):
 	"""
-	collect audio path, label, patient ID
+	collect items from batch
+	batch = [[items from get_item()], [...]]
+	batch shape = len(get_item())'s return X number of items in the batch
 	"""
 	aud = [itm[0] for itm in batch]
 	target = np.stack([itm[1] for itm in batch])
 	audio_filepaths = np.stack([itm[2] for itm in batch])
 	start_end = [(itm[3], itm[4]) for itm in batch]
-	return aud, target, audio_filepaths, start_end
+	collated = [aud, target, audio_filepaths, start_end]
+	num_additional = len(batch[0]) - 5
+	## number of additional features
+	print(num_additional)
+	for idx in range(num_additional):
+		this_additional = np.stack([itm[len(collated) + idx + 1] for itm in batch])
+		collated.append(this_additional)
+	return collated

@@ -20,7 +20,7 @@ class BinaryModel:
 		init;
 		"""
 		self.n_concat = n_concat
-		self.nn = nn if nn is not None else VoiceEncoder()
+		self.nn = nn
 		self.set_nn_device(device)
 		self.device = device
 
@@ -72,12 +72,18 @@ class BinaryModel:
 				cum_loss, cum_corr, count = 0, 0, 0
 				## training loop
 				with tqdm(total=len(dset_trn), desc=f'Epoch {epoch} (TRN)',
-					ascii=True, bar_format='{l_bar}{r_bar}', file=sys.stdout) as pbar:
-					for Xs, ys, *_ in dldr_trn:
+					ascii=True, bar_format='{l_bar}{r_bar}', file=sys.stdout,
+						miniters=len(dset_trn) / 100) as pbar:
+					for Xs, ys, audio, _, *additional_feats in dldr_trn:
+						## from collate_fn(batch) in binary_audio_dataset.py
+						## fea, label, audio_fp, start, end
+						## Xs -> list (len=num samples in batch)
+						## ys -> numpy.ndarray (len=num samples in batch)
 						self.nn.reformat(Xs, self.n_concat)
 						ys = torch.tensor(ys, dtype=torch.long, device=self.nn.device)
 						self.nn.zero_grad()
-						scores, loss = self.nn.get_scores_loss(Xs, ys, loss_fn)
+						scores, loss = self.nn.get_scores_loss(Xs, ys, loss_fn,
+							additional_feats=additional_feats)
 						loss.backward()
 						opt.step()
 						pred = torch.argmax(scores, 1)
@@ -138,10 +144,11 @@ class BinaryModel:
 		# evaluation loop
 		with torch.set_grad_enabled(False):
 			with tqdm(total=len(dset), desc='Epoch ___ (EVL)', ascii=True,
-				bar_format='{l_bar}{r_bar}', file=sys.stdout) as pbar:
-				for Xs, _, x_filepaths, start_end_list in dldr:
+				bar_format='{l_bar}{r_bar}', file=sys.stdout, miniters=len(dset) / 100) as pbar:
+				for Xs, _, x_filepaths, start_end_list, *additional_feats in dldr:
 					self.nn.reformat(Xs, self.n_concat)
-					out = self.nn.get_scores(Xs)
+					out = self.nn.forward(Xs, additional_feats)
+					# out = self.nn.get_scores(Xs)
 					# append batch outputs to result
 					results = out.data.cpu().numpy()
 					all_results.append(results)
