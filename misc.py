@@ -100,6 +100,30 @@ def calc_performance_metrics(scr, lbl):
 		met['auc'] = np.nan
 	return met
 
+def populate_met(met, TN, TP, FN, FP, lbl, prd, scr):
+	"""
+	populate met dict
+	"""
+	N = TN + TP + FN + FP
+	S = (TP + FN) / N
+	P = (TP + FP) / N
+	sen = TP / (TP + FN)
+	spc = TN / (TN + FP)
+	met['acc'] = (TN + TP) / N
+	met['balanced_acc'] = (sen + spc) / 2
+	met['sen'] = sen
+	met['spc'] = spc
+	met['prc'] = TP / (TP + FP)
+	met['f1s'] = 2 * (met['prc'] * met['sen']) / (met['prc'] + met['sen'])
+	met['wt_f1s'] = f1_score(lbl, prd, average='weighted')
+	met['mcc'] = (TP / N - S * P) / np.sqrt(P * S * (1-S) * (1-P))
+	try:
+		met['auc'] = roc_auc_score(y_true=lbl, y_score=scr)
+	except KeyboardInterrupt as kbi:
+		raise kbi
+	except:
+		met['auc'] = np.nan
+
 def show_performance_metrics(met):
 	"""
 	print performance metrics;
