@@ -66,11 +66,11 @@ def plot_individual_curve(hmp_roc, legend_dict, curve_str, fig_name):
 			  bbox_to_anchor=(0.04, 0.04, 0.5, 0.5),
 			  loc='lower left')
 
-	fig.savefig(fig_name, dpi=300, format='svg')
+	fig.savefig(fig_name, dpi=300, format='svg', bbox_inches='tight')
 	plt.close('all')
 	# print(fig_name)
 
-def main():
+def main(fig_ext='Fusion'):
 	"""
 	main entrypoint
 	"""
@@ -142,7 +142,7 @@ def main():
 		except (TypeError, ValueError) as error:
 			print(error)
 			continue
-		legend_dict = {0: ('magenta', 'Fusion')}
+		legend_dict = {0: ('magenta', fig_ext)}
 		fig_name = f'{dir_rsl}/individual_roc.svg'
 		plot_individual_curve(curr_hmp_roc, legend_dict, 'roc', fig_name)
 		fig_name = f'{dir_rsl}/individual_pr.svg'
@@ -157,4 +157,6 @@ def main():
 	print(txt_out)
 
 if __name__ == '__main__':
-	main()
+	fig_ext = sys.argv[2] if len(sys.argv) >= 3 else 'Fusion'
+	fig_ext = '' if fig_ext == 'e' else fig_ext
+	main(fig_ext=fig_ext)

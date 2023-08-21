@@ -11,7 +11,7 @@ import train_func as tf
 from binary_audio_dataset import BinaryAudioDataset
 from binary_model import BinaryModel
 from handle_input import get_args
-from load_all_data import load_all_data, preload_mfcc_load_osm, get_mfcc_osm, load_all_osm_and_mfcc
+from load_all_data import load_all_data, load_all_osm_and_mfcc
 from misc import gen_seed_dirs, pregen_seed_dirs
 from read_txt import select_task
 
@@ -45,8 +45,10 @@ def main():
 
 	add_feats = int(args.get('add_feats', 0))
 	feats_to_indices = {0: [], 1: ['age'], 2: ['age', 'encoded_sex'],
-		3: ['encoded_sex']}
+		3: ['encoded_sex'], 4: ['age', 'encoded_sex', 'edu']}
 	feat_indices = feats_to_indices.get(add_feats)
+	if add_feats != 0:
+		assert feat_indices is not None, f'{add_feats}, {feat_indices}'
 	final_args = {'task_id': task_id,
 		'device': device, 'n_epoch': n_epoch,
 		'num_seeds': num_seeds, 'num_folds': num_folds,
@@ -70,14 +72,14 @@ def main():
 	if holdout_test:
 		ext += '_holdout_test'
 
+	pos_de_list = [2, 3, 4, 5, 7, 8, 9, 10, 6, 11, 12, 13, 14, 15]
+	pos_de_list.extend([16, 17, 18, 19, 20, 21])
+	## ge85, ge90 models;
 	task_id = int(task_id)
 	if task_id in [0, 1]:
 		get_label = lambda d: int(d['is_de_and_ad'])
-	elif task_id in [2, 3, 4, 5, 7, 8, 9, 10, 6, 11]:
+	elif task_id in pos_de_list:
 		get_label = lambda d: int(d['is_demented'])
-	# elif task_id in [6, 11]:
-	# 	get_label = lambda d: int(d['is_nde'])
-	## 2023-07-17 - making NDE tasks positive for DE to be consistent
 	else:
 		raise AssertionError(f'no get label for task id {task_id}')
 	audio_dset = BinaryAudioDataset

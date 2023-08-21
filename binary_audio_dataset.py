@@ -112,10 +112,11 @@ def collate_fn(batch):
 	audio_filepaths = np.stack([itm[2] for itm in batch])
 	start_end = [(itm[3], itm[4]) for itm in batch]
 	collated = [aud, target, audio_filepaths, start_end]
-	num_additional = len(batch[0]) - 5
+	## to_collate in get_item() is of length 5
+	to_collate_len = 5
+	num_additional = len(batch[0]) - to_collate_len
 	## number of additional features
-	print(num_additional)
 	for idx in range(num_additional):
-		this_additional = np.stack([itm[len(collated) + idx + 1] for itm in batch])
+		this_additional = np.stack([itm[to_collate_len + idx] for itm in batch])
 		collated.append(this_additional)
 	return collated

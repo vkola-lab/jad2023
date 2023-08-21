@@ -3,11 +3,13 @@ random_forest.py
 running a random forest on age, sex, education, etc;
 """
 import os
+import csv
 import pprint
 from collections import defaultdict
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import GroupKFold
@@ -19,11 +21,14 @@ from plot_directory import plot_individual_curve
 FEAT_COLS = ['age', 'encoded_sex', 'edu']
 # FEAT_COLS = ['age', 'encoded_sex']
 # FEAT_COLS = ['age']
+# FEAT_COLS = []
 EXT = '_'.join(FEAT_COLS)
 if len(FEAT_COLS) == 1:
 	PLOT_EXT = {'age': 'Age', 'encoded_sex': 'Sex', 'edu': 'Education'}[FEAT_COLS[0]]
+elif len(FEAT_COLS) == 0:
+	PLOT_EXT = ""
 else:
-	PLOT_EXT = 'Demographics'
+	PLOT_EXT = 'Demo'
 
 
 def sample():
@@ -41,6 +46,42 @@ def sample():
 		print(test)
 		print(groups[train])
 
+def load_functionals(df, functional_idx):
+	"""
+	loading functionals data;
+	"""
+	functional_fps = df[functional_idx]
+	empty_df = pd.DataFrame({})
+	for functional_fp in tqdm(functional_fps):
+		functional_data = pd.read_csv(functional_fp)
+		functional_data['osm_funct_csv'] = functional_fp
+		empty_df = empty_df.append(functional_data, ignore_index=True)
+	return empty_df
+
+def test_functionals():
+	"""
+	testing functionals
+	"""
+	csv_in = "csv_in/edu/demo_test.csv"
+	df = pd.read_csv(csv_in)
+	functional_idx = 'osm_funct_csv'
+	final_df = load_functionals(df, functional_idx)
+	ignore_headers = ['start', 'end', 'osm_funct_csv']
+	functional_headers = [c for c in final_df.columns if c not in ignore_headers]
+	final_df = df.set_index(functional_idx).join(final_df.set_index(functional_idx))
+	print(final_df)
+	print(len(functional_headers))
+
+def add_functionals(df, functional_idx):
+	"""
+	add functionals to main dataframe;
+	"""
+	final_df = load_functionals(df, functional_idx)
+	ignore_headers = ['start', 'end', 'osm_funct_csv']
+	functional_headers = [c for c in final_df.columns if c not in ignore_headers]
+	final_df = df.join(final_df.set_index(functional_idx), on=functional_idx)
+	return final_df, functional_headers
+
 def get_feats_labels_groups(df, feat_cols, label_idx, group_idx):
 	"""
 	get feats, labels, and groups
@@ -52,22 +93,27 @@ def get_feats_labels_groups(df, feat_cols, label_idx, group_idx):
 	groups = df[group_idx]
 	return feats, labels, groups
 
-def get_data():
+def get_data(functional_idx=None):
 	"""
 	get data from csv
 	"""
-	# csv_in = "csv_in/nde_vs_de/"+\
-	# 	"remap_(760)_[1511]_20230714_9_25_34_0488_voice_and_funcs_and_demo_NDE_vs_DE.csv"
 	csv_in = "csv_in/edu/"+\
-		"remap_(760)_[1511]_20230724_15_4_2_0772_voice_funcs_demo_add_edu_NDE_vs_DE.csv"
+		"remap_(760)_[1511]_20230803_15_29_18_0985_llds_funcs_demo_NDE_vs_DE.csv"
 	df = pd.read_csv(csv_in)
 	df['fid'] = df['idtype'].astype(str) + '-' + df['id'].astype(str)
-	# df['fid'] = df.apply(lambda x: str(x['idtype']) + '-' + str(df['id']).zfill(4), axis=1)
 	hc_df = df[df['is_norm'] == 1]
+	print(hc_df.columns)
+	print(df.columns)
 	mci_df = df[df['is_mci'] == 1]
 	de_df = df[df['is_demented'] == 1]
 
-
+	if functional_idx is not None:
+		df, functional_headers = add_functionals(df, functional_idx)
+		FEAT_COLS.extend(functional_headers)
+		sliced_df = df[functional_headers + [functional_idx]]
+		hc_df = hc_df.merge(sliced_df, on=functional_idx, how='left')
+		mci_df = mci_df.merge(sliced_df, on=functional_idx, how='left')
+		de_df = de_df.merge(sliced_df, on=functional_idx, how='left')
 	label_idx = 'is_demented'
 	group_idx = 'fid'
 	hc_data = get_feats_labels_groups(hc_df, FEAT_COLS, label_idx,
@@ -76,9 +122,11 @@ def get_data():
 		group_idx)
 	de_data = get_feats_labels_groups(de_df, FEAT_COLS, label_idx,
 		group_idx)
+
+
 	return hc_data, mci_data, de_data
 
-def run_rf(feats, labels, groups, ext):
+def run_rf(feats, labels, groups, ext, plot_prefix=""):
 	"""
 	run the random forest
 	"""
@@ -87,6 +135,12 @@ def run_rf(feats, labels, groups, ext):
 	avg_stats = defaultdict(list)
 	all_labels = []
 	all_probs = []
+	today = get_date()
+	cur_time = get_time()
+	parent_dir = f'random_forest/{today}/{cur_time}_{ext}'
+	if not os.path.isdir(parent_dir):
+		os.makedirs(parent_dir)
+
 	for idx, (train, test) in enumerate(gkf.split(feats, labels, groups=groups)):
 		print(f'Fold: {idx}')
 		x_train = feats.iloc[train]
@@ -97,6 +151,13 @@ def run_rf(feats, labels, groups, ext):
 		y_test = labels.iloc[test]
 		y_pred = rf.predict(x_test)
 		y_pred_prob = rf.predict_proba(x_test)[:, 1]
+
+		csv_fp = os.path.join(parent_dir, f'fold_{idx}.csv')
+		dframe = pd.DataFrame()
+		dframe['label'] = y_test
+		dframe['pred'] = y_pred
+		dframe['prob'] = y_pred_prob
+		dframe.to_csv(csv_fp, index=False)
 		all_labels.append(y_test)
 		all_probs.append(y_pred_prob)
 		met = {}
@@ -106,19 +167,36 @@ def run_rf(feats, labels, groups, ext):
 		pprint.pprint(met)
 		for met, val in met.items():
 			avg_stats[met].append(val)
-	today = get_date()
-	cur_time = get_time()
 
-	parent_dir = f'random_forest/{today}/{cur_time}/{ext}'
-	if not os.path.isdir(parent_dir):
-		os.makedirs(parent_dir)
 
-	plot_stats(all_labels, all_probs, ext, parent_dir)
+
+	plot_stats(all_labels, all_probs, ext, parent_dir, plot_prefix=plot_prefix)
 	feat_imp_fig_name = os.path.join(parent_dir, f'feat_imp_{EXT}.svg')
-	importances = plot_feat_importance(rf, feat_imp_fig_name)
-	stats_to_txt(avg_stats, ext, parent_dir, importances)
+	inc_functionals = '_functionals' in ext
+	csv_out = os.path.join(parent_dir, f'feat_imp_{EXT}.csv')
+	if inc_functionals:
+		importances = dict(zip(FEAT_COLS, rf.feature_importances_))
+		importances_to_csv(csv_out, importances)
+	else:
+		importances = plot_feat_importance(rf, feat_imp_fig_name)
+		importances_to_csv(csv_out, dict(zip(FEAT_COLS, rf.feature_importances_)))
 
-def stats_to_txt(avg_stats, ext, parent_dir, importances):
+	stats_to_txt(avg_stats, ext, parent_dir, importances, inc_functionals)
+
+def importances_to_csv(csv_out, importances):
+	"""
+	write to csv instead
+	"""
+	headers = ['feature_name', 'importance']
+	with open(csv_out, 'w', newline='') as outfile:
+		writer = csv.DictWriter(outfile, fieldnames=headers)
+		writer.writeheader()
+		for feat_name, importance in importances.items():
+			data = {'feature_name': feat_name, 'importance': importance}
+			writer.writerow(data)
+	print(csv_out)
+
+def stats_to_txt(avg_stats, ext, parent_dir, importances, inc_functionals):
 	"""
 	write stats to txt
 	"""
@@ -131,21 +209,22 @@ def stats_to_txt(avg_stats, ext, parent_dir, importances):
 			mean = np.mean(list_of_vals)
 			std = np.std(list_of_vals)
 			lines.append(f'{met_name}: {mean:.3f}, {std:.3f}\n')
-		lines.append('\nfeat_importance:\n')
-		for feat_name, importance_val in importances.items():
-			lines.append(f'{feat_name}: {importance_val} \n')
+		if not inc_functionals:
+			lines.append('\nfeat_importance:\n')
+			for feat_name, importance_val in importances.items():
+				lines.append(f'{feat_name}: {importance_val} \n')
 		outfile.write(''.join(lines))
 		print(''.join(lines))
 	print(txt_fp)
 
-def plot_stats(y_test, y_pred_prob, ext, parent_dir):
+def plot_stats(y_test, y_pred_prob, ext, parent_dir, plot_prefix=""):
 	"""
 	plotting stats
 	"""
 	curr_hmp_roc = msc.get_roc_info(y_test, y_pred_prob)
 	curr_hmp_pr  = msc.get_pr_info(y_test, y_pred_prob)
 	# legend_dict = {0: ('magenta', 'Age')}
-	legend_dict = {0: ('magenta', PLOT_EXT)}
+	legend_dict = {0: ('magenta', f'{plot_prefix}{PLOT_EXT}')}
 	fig_name = os.path.join(parent_dir, f'{ext}_roc.svg')
 	plot_individual_curve(curr_hmp_roc, legend_dict, 'roc', fig_name)
 	print(fig_name)
@@ -176,13 +255,16 @@ def hc_vs_de():
 	"""
 	run hc vs DE
 	"""
-	hc_data, _, de_data = get_data()
+	functional_idx = 'osm_funct_csv'
+	hc_data, _, de_data = get_data(functional_idx=functional_idx)
 	hc_feats, hc_labels, hc_groups = hc_data
 	de_feats, de_labels, de_groups = de_data
 	feats = hc_feats.append(de_feats)
 	labels = hc_labels.append(de_labels)
 	groups = hc_groups.append(de_groups)
 	ext = f'HC_vs_DE_{EXT}'
+	if functional_idx is not None:
+		ext += '_functionals'
 	run_rf(feats, labels, groups, ext)
 
 def mci_vs_de():
@@ -212,6 +294,44 @@ def nde_vs_de():
 	ext = f'NDE_vs_DE_{EXT}'
 	run_rf(feats, labels, groups, ext)
 
+def run_all():
+	"""
+	running all at the same time, since it takes awhile to load the data
+	"""
+	functional_idx = 'osm_funct_csv'
+	plot_prefix = 'Funct'
+	# plot_prefix = ''
+	# functional_idx = None
+
+	hc_data, mci_data, de_data = get_data(functional_idx=functional_idx)
+	hc_feats, hc_labels, hc_groups = hc_data
+	mci_feats, mci_labels, mci_groups = mci_data
+	de_feats, de_labels, de_groups = de_data
+
+	feats = hc_feats.append(de_feats)
+	labels = hc_labels.append(de_labels)
+	groups = hc_groups.append(de_groups)
+	ext = f'HC_vs_DE_{EXT}'
+	if functional_idx is not None:
+		ext += '_functionals'
+	run_rf(feats, labels, groups, ext, plot_prefix=plot_prefix)
+
+	feats = mci_feats.append(de_feats)
+	labels = mci_labels.append(de_labels)
+	groups = mci_groups.append(de_groups)
+	ext = f'MCI_vs_DE_{EXT}'
+	if functional_idx is not None:
+		ext += '_functionals'
+	run_rf(feats, labels, groups, ext, plot_prefix=plot_prefix)
+
+	feats = hc_feats.append(mci_feats).append(de_feats)
+	labels = hc_labels.append(mci_labels).append(de_labels)
+	groups = hc_groups.append(mci_groups).append(de_groups)
+	ext = f'NDE_vs_DE_{EXT}'
+	if functional_idx is not None:
+		ext += '_functionals'
+	run_rf(feats, labels, groups, ext, plot_prefix=plot_prefix)
+
+
 if __name__ == '__main__':
-	# hc_vs_de()
-	mci_vs_de()
+	run_all()
