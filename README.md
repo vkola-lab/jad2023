@@ -29,6 +29,6 @@ The initializer for BinaryAudioDataset() contains many attributes that define va
 Users must change the functions related to querying the input CSVs and getting the label from the input CSVs. The functions related to generating the cross validation folds can likely be reused, but users can adjust them as preferred.
 
 ## Viewing model performance
-### plot_subplots.py.py
+### plot_subplots.py
 usage: `python plot_subplots.py <directory_of_cnn_results> <directory_of_cnn_results>, ...`
 This script takes in any number of directories of CNN results and will plot ROC-AUC and PR-AUC curves as individual plots, as well as in a single figure with subplots.
