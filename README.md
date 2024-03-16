@@ -1,6 +1,6 @@
 # Fusion of low-level descriptors of digital voice recordings for dementia assessment
 
-This work is accepted in the _Journal of Alzheimer's Disease_.
+This work is published in the _Journal of Alzheimer's Disease_ (http://dx.doi.org/10.3233/JAD-230560).
 
 ## Technical Overview:
 The model code is written using Pytorch and this iteration of the code assumes usage of a GPU. The code can be adjusted to run with a CPU instead, although it will be noticeably slower. The data we used from the Framingham Heart Study is not publicly available and so users will have to supply their own data inputs to the model. Users will also have to create their own functions to both read their own data and input their data to the models.
